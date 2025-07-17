@@ -9,6 +9,7 @@ import fs from 'fs-extra';
 export class CatalogManager {
   private outputDir: string;
   private catalogIndex: CatalogIndex;
+  private sourceCatalogs: Map<MapSource, CatalogIndex>;
 
   constructor(outputDir: string) {
     this.outputDir = outputDir;
@@ -22,10 +23,25 @@ export class CatalogManager {
       lastUpdated: new Date(),
       levels: [],
     };
+    this.sourceCatalogs = new Map();
+    // Initialize source catalogs
+    for (const source of Object.values(MapSource)) {
+      this.sourceCatalogs.set(source, {
+        totalLevels: 0,
+        sources: {
+          [MapSource.ARCHIVE]: 0,
+          [MapSource.DISCORD]: 0,
+          [MapSource.HOGNOSE]: 0,
+        },
+        lastUpdated: new Date(),
+        levels: [],
+      });
+    }
   }
 
   async loadCatalogIndex(): Promise<void> {
     try {
+      // Load main catalog index
       const indexPath = path.join(this.outputDir, CATALOG_FILENAMES.INDEX);
       const existingIndex = await FileUtils.readJSON<CatalogIndex>(indexPath);
 
@@ -48,6 +64,30 @@ export class CatalogManager {
       } else {
         logger.info('No existing catalog index found, creating new one');
       }
+
+      // Load source-specific catalogs
+      for (const source of Object.values(MapSource)) {
+        const sourceDir = this.getSourceLevelsDir(source);
+        const sourceIndexPath = path.join(this.outputDir, sourceDir, CATALOG_FILENAMES.INDEX);
+        const sourceIndex = await FileUtils.readJSON<CatalogIndex>(sourceIndexPath);
+
+        if (sourceIndex) {
+          this.sourceCatalogs.set(source, {
+            ...sourceIndex,
+            lastUpdated: new Date(sourceIndex.lastUpdated),
+            levels: sourceIndex.levels.map(level => ({
+              ...level,
+              metadata: {
+                ...level.metadata,
+                postedDate: new Date(level.metadata.postedDate),
+              },
+              indexed: new Date(level.indexed),
+              lastUpdated: new Date(level.lastUpdated),
+            })),
+          });
+          logger.debug(`Loaded ${source} catalog with ${sourceIndex.totalLevels} levels`);
+        }
+      }
     } catch (error) {
       logger.error('Failed to load catalog index:', error);
     }
@@ -55,10 +95,21 @@ export class CatalogManager {
 
   async saveCatalogIndex(): Promise<void> {
     try {
+      // Save main catalog index
       const indexPath = path.join(this.outputDir, CATALOG_FILENAMES.INDEX);
       await FileUtils.ensureDir(this.outputDir);
       await FileUtils.writeJSON(indexPath, this.catalogIndex);
       logger.debug(`Saved catalog index to ${indexPath}`);
+
+      // Save source-specific catalog indexes
+      for (const [source, catalog] of this.sourceCatalogs.entries()) {
+        const sourceDir = this.getSourceLevelsDir(source);
+        const sourcePath = path.join(this.outputDir, sourceDir);
+        await FileUtils.ensureDir(sourcePath);
+        const sourceIndexPath = path.join(sourcePath, CATALOG_FILENAMES.INDEX);
+        await FileUtils.writeJSON(sourceIndexPath, catalog);
+        logger.debug(`Saved ${source} catalog index to ${sourceIndexPath}`);
+      }
     } catch (error) {
       logger.error('Failed to save catalog index:', error);
       throw error;
@@ -67,7 +118,7 @@ export class CatalogManager {
 
   async addLevel(level: Level): Promise<void> {
     try {
-      // Check if level already exists
+      // Update main catalog
       const existingIndex = this.catalogIndex.levels.findIndex(
         l => l.metadata.id === level.metadata.id
       );
@@ -82,6 +133,23 @@ export class CatalogManager {
         this.catalogIndex.sources[level.metadata.source]++;
         this.catalogIndex.totalLevels++;
         logger.debug(`Added new level: ${level.metadata.title}`);
+      }
+
+      // Update source-specific catalog
+      const sourceCatalog = this.sourceCatalogs.get(level.metadata.source);
+      if (sourceCatalog) {
+        const sourceExistingIndex = sourceCatalog.levels.findIndex(
+          l => l.metadata.id === level.metadata.id
+        );
+
+        if (sourceExistingIndex !== -1) {
+          sourceCatalog.levels[sourceExistingIndex] = level;
+        } else {
+          sourceCatalog.levels.push(level);
+          sourceCatalog.sources[level.metadata.source]++;
+          sourceCatalog.totalLevels++;
+        }
+        sourceCatalog.lastUpdated = new Date();
       }
 
       this.catalogIndex.lastUpdated = new Date();
@@ -103,10 +171,22 @@ export class CatalogManager {
 
       const level = this.catalogIndex.levels[levelIndex];
 
-      // Remove level from index
+      // Remove level from main index
       this.catalogIndex.levels.splice(levelIndex, 1);
       this.catalogIndex.sources[level.metadata.source]--;
       this.catalogIndex.totalLevels--;
+
+      // Remove level from source catalog
+      const sourceCatalog = this.sourceCatalogs.get(level.metadata.source);
+      if (sourceCatalog) {
+        const sourceIndex = sourceCatalog.levels.findIndex(l => l.metadata.id === levelId);
+        if (sourceIndex !== -1) {
+          sourceCatalog.levels.splice(sourceIndex, 1);
+          sourceCatalog.sources[level.metadata.source]--;
+          sourceCatalog.totalLevels--;
+          sourceCatalog.lastUpdated = new Date();
+        }
+      }
 
       // Remove level directory
       await FileUtils.deleteFile(level.catalogPath);
@@ -371,5 +451,18 @@ export class CatalogManager {
     }
 
     return duplicates;
+  }
+
+  private getSourceLevelsDir(source: MapSource): string {
+    switch (source) {
+      case MapSource.ARCHIVE:
+        return 'levels-archive';
+      case MapSource.DISCORD:
+        return 'levels-discord';
+      case MapSource.HOGNOSE:
+        return 'levels-hognose';
+      default:
+        throw new Error(`Unknown source: ${source}`);
+    }
   }
 }
