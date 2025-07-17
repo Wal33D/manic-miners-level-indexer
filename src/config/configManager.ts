@@ -9,7 +9,7 @@ export class ConfigManager {
   private configPath: string;
 
   constructor(configPath?: string) {
-    this.config = { ...defaultConfig };
+    this.config = JSON.parse(JSON.stringify(defaultConfig));
     this.configPath = configPath || path.join(process.cwd(), 'config.json');
   }
 
@@ -204,7 +204,7 @@ export class ConfigManager {
   }
 
   private mergeConfigs(base: IndexerConfig, updates: Partial<IndexerConfig>): IndexerConfig {
-    const merged = { ...base };
+    const merged: IndexerConfig = JSON.parse(JSON.stringify(base));
 
     // Handle nested objects
     if (updates.sources) {
