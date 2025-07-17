@@ -1,5 +1,5 @@
 import { MasterIndexer } from './catalog/masterIndexer';
-import { ImprovedArchiveIndexerV2 } from './indexers/archive';
+import { InternetArchiveIndexer } from './indexers/archive';
 import { HognoseIndexer } from './indexers/hognoseIndexer';
 import { DiscordIndexer } from './indexers/discordIndexer';
 import { CatalogManager } from './catalog/catalogManager';
@@ -9,7 +9,7 @@ import { logger } from './utils/logger';
 // Export all the main classes for programmatic usage
 export {
   MasterIndexer,
-  ImprovedArchiveIndexerV2 as ArchiveIndexer,
+  InternetArchiveIndexer as ArchiveIndexer,
   HognoseIndexer,
   DiscordIndexer,
   CatalogManager,

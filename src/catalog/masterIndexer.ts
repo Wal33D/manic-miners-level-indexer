@@ -1,7 +1,7 @@
 import { Level, MapSource } from '../types';
 import { CatalogManager } from './catalogManager';
 import { MapRenderer } from '../renderer/mapRenderer';
-import { ImprovedArchiveIndexerV2 } from '../indexers/archive/ImprovedArchiveIndexerV2';
+import { InternetArchiveIndexer } from '../indexers/archive/InternetArchiveIndexer';
 import { HognoseIndexer } from '../indexers/hognoseIndexer';
 import { DiscordIndexer } from '../indexers/discordIndexer';
 import { logger } from '../utils/logger';
@@ -15,7 +15,7 @@ export class MasterIndexer {
   private config: IndexerConfig;
   private catalogManager: CatalogManager;
   private renderer: MapRenderer;
-  private improvedArchiveIndexerV2?: ImprovedArchiveIndexerV2;
+  private internetArchiveIndexer?: InternetArchiveIndexer;
   private hognoseIndexer?: HognoseIndexer;
   private discordIndexer?: DiscordIndexer;
 
@@ -27,7 +27,7 @@ export class MasterIndexer {
     // Initialize indexers based on config
     if (config.sources.archive.enabled) {
       // Always use V2 for better streaming performance
-      this.improvedArchiveIndexerV2 = new ImprovedArchiveIndexerV2(
+      this.internetArchiveIndexer = new InternetArchiveIndexer(
         config.sources.archive,
         config.outputDir
       );
@@ -56,9 +56,9 @@ export class MasterIndexer {
       let totalErrors = 0;
 
       // Index from all enabled sources
-      if (this.improvedArchiveIndexerV2) {
+      if (this.internetArchiveIndexer) {
         logger.info('Starting improved Internet Archive indexing (V2)...');
-        const result = await this.improvedArchiveIndexerV2.indexArchive(progress => {
+        const result = await this.internetArchiveIndexer.indexArchive(progress => {
           logger.progress(progress.message, progress.current, progress.total);
         });
 
@@ -139,8 +139,8 @@ export class MasterIndexer {
 
       switch (source) {
         case MapSource.ARCHIVE:
-          if (this.improvedArchiveIndexerV2) {
-            await this.improvedArchiveIndexerV2.indexArchive(progress => {
+          if (this.internetArchiveIndexer) {
+            await this.internetArchiveIndexer.indexArchive(progress => {
               logger.progress(progress.message, progress.current, progress.total);
             });
           }

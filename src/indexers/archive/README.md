@@ -1,4 +1,4 @@
-# Improved Archive.org Indexer V2
+# Internet Archive Indexer
 
 This is a significantly enhanced streaming version of the Archive.org indexer with the following improvements:
 
@@ -43,7 +43,7 @@ The improved indexer consists of four main components:
 1. **MetadataFetcher** - Handles API calls and caching
 2. **DownloadManager** - Manages file downloads with queue system
 3. **StateManager** - Handles persistence and resume capability
-4. **ImprovedArchiveIndexerV2** - Main orchestrator class with streaming support
+4. **InternetArchiveIndexer** - Main orchestrator class with streaming support
 
 ## Configuration
 
@@ -80,9 +80,9 @@ npm run index
 
 ### Programmatic Usage
 ```typescript
-import { ImprovedArchiveIndexerV2 } from './src/indexers/archive';
+import { InternetArchiveIndexer } from './src/indexers/archive';
 
-const indexer = new ImprovedArchiveIndexerV2(config, outputDir);
+const indexer = new InternetArchiveIndexer(config, outputDir);
 
 // Listen to progress events
 indexer.on('downloadProgress', (progress) => {

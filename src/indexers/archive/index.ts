@@ -1,2 +1,2 @@
-export { ImprovedArchiveIndexerV2 } from './ImprovedArchiveIndexerV2';
+export { InternetArchiveIndexer } from './InternetArchiveIndexer';
 export * from './types';

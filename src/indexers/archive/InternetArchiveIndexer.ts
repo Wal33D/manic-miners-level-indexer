@@ -25,7 +25,7 @@ import { DownloadManager } from './DownloadManager';
 import { StateManager } from './StateManager';
 import pLimit from 'p-limit';
 
-export class ImprovedArchiveIndexerV2 extends EventEmitter {
+export class InternetArchiveIndexer extends EventEmitter {
   private config: ArchiveIndexerConfig;
   private outputDir: string;
   private metadataFetcher: MetadataFetcher;
