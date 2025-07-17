@@ -41,7 +41,7 @@ export class HognoseIndexer {
 
   async indexHognose(
     progressCallback?: (progress: IndexerProgress) => void,
-    options?: { 
+    options?: {
       latestOnly?: boolean;
       replaceExisting?: boolean; // Clear old Hognose levels before indexing new ones
     }
@@ -53,19 +53,19 @@ export class HognoseIndexer {
 
     try {
       logger.info('Starting Hognose indexing...');
-      
+
       // If replaceExisting is true, clear all existing Hognose levels
       if (options?.replaceExisting) {
         logger.info('Clearing existing Hognose levels...');
         const { CatalogManager } = await import('../catalog/catalogManager');
         const catalogManager = new CatalogManager(this.outputDir);
         await catalogManager.loadCatalogIndex();
-        
+
         const clearedCount = await catalogManager.clearLevelsBySource(MapSource.HOGNOSE);
         if (clearedCount > 0) {
           logger.info(`Cleared ${clearedCount} existing Hognose levels`);
         }
-        
+
         // Also clear the processed releases tracking
         this.processedReleases.clear();
         await this.saveProcessedReleases();
@@ -85,41 +85,42 @@ export class HognoseIndexer {
       }
 
       const releases = await this.fetchHognoseReleases();
-      
+
       // Check if we have a new release
-      let hasNewRelease = false;
       if (releases.length > 0 && this.processedReleases.size > 0) {
         const latestRelease = releases[0].tag_name;
         if (!this.processedReleases.has(latestRelease)) {
-          hasNewRelease = true;
           logger.info(`New Hognose release detected: ${latestRelease}`);
-          
+
           // If we have a new release and replaceExisting is not explicitly false, clear old levels
           if (options?.replaceExisting !== false) {
             logger.info('Clearing old Hognose levels for new release...');
             const { CatalogManager } = await import('../catalog/catalogManager');
             const catalogManager = new CatalogManager(this.outputDir);
             await catalogManager.loadCatalogIndex();
-            
+
             const clearedCount = await catalogManager.clearLevelsBySource(MapSource.HOGNOSE);
             if (clearedCount > 0) {
               logger.info(`Cleared ${clearedCount} old Hognose levels`);
             }
-            
+
             // Clear processed releases to reprocess the new one
             this.processedReleases.clear();
             await this.saveProcessedReleases();
           }
         }
       }
-      
+
       // By default, only process the latest release
-      const releasesToProcess = options?.latestOnly !== false && releases.length > 0 
-        ? [releases[0]] // GitHub API returns releases in descending order (newest first)
-        : releases;
-      
+      const releasesToProcess =
+        options?.latestOnly !== false && releases.length > 0
+          ? [releases[0]] // GitHub API returns releases in descending order (newest first)
+          : releases;
+
       if (options?.latestOnly !== false && releases.length > 1) {
-        logger.info(`Found ${releases.length} releases, processing only the latest: ${releases[0].tag_name}`);
+        logger.info(
+          `Found ${releases.length} releases, processing only the latest: ${releases[0].tag_name}`
+        );
       }
 
       progressCallback?.({
