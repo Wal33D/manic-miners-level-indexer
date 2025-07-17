@@ -101,12 +101,12 @@ export class ImprovedArchiveIndexerV2 extends EventEmitter {
     const errors: string[] = [];
 
     try {
-      logger.info('Starting improved Archive.org indexing (V2 - streaming mode)...');
+      logger.section('Archive.org Indexer (V2 - Streaming Mode)');
 
       // Load previous state
       await this.stateManager.loadState();
       const stats = this.stateManager.getStats();
-      logger.info(`Resuming from state: ${stats.uniqueProcessed} items already processed`);
+      logger.item(`Resuming from: ${stats.uniqueProcessed} items already processed`);
 
       const searchOptions: ArchiveSearchOptions = {
         queries: this.config.searchQueries || ['manic miners level'],
@@ -160,7 +160,7 @@ export class ImprovedArchiveIndexerV2 extends EventEmitter {
               if (processed) {
                 levelsProcessed++;
                 this.stateManager.markItemProcessed(item.identifier);
-                logger.info(`✓ Completed: ${item.title}`);
+                logger.item(`${item.title}`, '✓');
               } else {
                 levelsSkipped++;
               }

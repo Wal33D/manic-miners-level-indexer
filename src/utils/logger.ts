@@ -52,27 +52,27 @@ export class Logger {
   info(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.INFO) {
       this.clearProgressLine();
-      console.log(chalk.blue('ℹ') + ' ' + message, ...args);
+      console.log(`${chalk.blue('ℹ')} ${message}`, ...args);
     }
   }
 
   warn(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.WARN) {
       this.clearProgressLine();
-      console.log(chalk.yellow('⚠') + ' ' + chalk.yellow(message), ...args);
+      console.log(`${chalk.yellow('⚠')} ${chalk.yellow(message)}`, ...args);
     }
   }
 
   error(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.ERROR) {
       this.clearProgressLine();
-      console.log(chalk.red('✖') + ' ' + chalk.red(message), ...args);
+      console.log(`${chalk.red('✖')} ${chalk.red(message)}`, ...args);
     }
   }
 
   success(message: string, ...args: unknown[]): void {
     this.clearProgressLine();
-    console.log(chalk.green('✔') + ' ' + chalk.green(message), ...args);
+    console.log(`${chalk.green('✔')} ${chalk.green(message)}`, ...args);
   }
 
   progress(message: string, current: number, total: number): void {
@@ -92,7 +92,7 @@ export class Logger {
     const barLength = 30;
     const filledLength = Math.floor((percentage / 100) * barLength);
     const bar = '█'.repeat(filledLength) + '░'.repeat(barLength - filledLength);
-    
+
     // Calculate ETA
     const elapsed = Date.now() - this.progressState.startTime;
     const rate = current > 0 ? current / (elapsed / 1000) : 0;
@@ -103,7 +103,7 @@ export class Logger {
     // Clear previous line and write new progress
     readline.clearLine(process.stdout, 0);
     readline.cursorTo(process.stdout, 0);
-    
+
     const progressLine = `${chalk.cyan(bar)} ${chalk.bold(`${percentage}%`)} ${chalk.dim(`(${current}/${total})`)} ${message}${etaStr}`;
     process.stdout.write(progressLine);
     this.lastProgressLine = progressLine;

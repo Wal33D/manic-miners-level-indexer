@@ -485,5 +485,4 @@ export class CatalogManager {
 
     return duplicates;
   }
-
 }
