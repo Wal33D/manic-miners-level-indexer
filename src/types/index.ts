@@ -1,7 +1,7 @@
 export enum MapSource {
   ARCHIVE = 'archive',
   DISCORD = 'discord',
-  HOGNOSE = 'hognose'
+  HOGNOSE = 'hognose',
 }
 
 export interface LevelMetadata {
@@ -59,6 +59,20 @@ export interface IndexerConfig {
       baseUrl: string;
       maxPages?: number;
       concurrentDownloads?: number;
+      searchQueries?: string[];
+      dateRange?: {
+        from: string;
+        to: string;
+      };
+      maxConcurrentMetadata?: number;
+      maxConcurrentDownloads?: number;
+      enableCache?: boolean;
+      cacheExpiry?: number;
+      retryAttempts?: number;
+      downloadTimeout?: number;
+      bandwidthLimit?: number;
+      skipExisting?: boolean;
+      verifyChecksums?: boolean;
     };
     discord: {
       enabled: boolean;

@@ -1,10 +1,33 @@
 import fetch from 'node-fetch';
 import unzipper from 'unzipper';
-import { HognoseRelease, Level, LevelMetadata, MapSource, IndexerProgress, IndexerResult } from '../types';
+import {
+  HognoseRelease,
+  Level,
+  LevelMetadata,
+  MapSource,
+  IndexerProgress,
+  IndexerResult,
+} from '../types';
 import { logger } from '../utils/logger';
 import { FileUtils } from '../utils/fileUtils';
 import path from 'path';
 import fs from 'fs-extra';
+
+// GitHub API types
+interface GitHubAsset {
+  name: string;
+  browser_download_url: string;
+  size: number;
+}
+
+interface GitHubRelease {
+  id: number;
+  tag_name: string;
+  name: string;
+  body?: string;
+  published_at: string;
+  assets: GitHubAsset[];
+}
 
 export class HognoseIndexer {
   private githubRepo: string;
@@ -16,7 +39,9 @@ export class HognoseIndexer {
     this.outputDir = outputDir;
   }
 
-  async indexHognose(progressCallback?: (progress: IndexerProgress) => void): Promise<IndexerResult> {
+  async indexHognose(
+    progressCallback?: (progress: IndexerProgress) => void
+  ): Promise<IndexerResult> {
     const startTime = Date.now();
     let levelsProcessed = 0;
     let levelsSkipped = 0;
@@ -24,31 +49,31 @@ export class HognoseIndexer {
 
     try {
       logger.info('Starting Hognose indexing...');
-      
+
       progressCallback?.({
         phase: 'scraping',
         source: MapSource.HOGNOSE,
         current: 0,
         total: 0,
-        message: 'Fetching Hognose releases...'
+        message: 'Fetching Hognose releases...',
       });
 
       // Load previously processed releases
       await this.loadProcessedReleases();
 
       const releases = await this.fetchHognoseReleases();
-      
+
       progressCallback?.({
         phase: 'downloading',
         source: MapSource.HOGNOSE,
         current: 0,
         total: releases.length,
-        message: 'Processing Hognose releases...'
+        message: 'Processing Hognose releases...',
       });
 
       for (let i = 0; i < releases.length; i++) {
         const release = releases[i];
-        
+
         try {
           if (this.processedReleases.has(release.tag_name)) {
             logger.debug(`Skipping already processed release: ${release.tag_name}`);
@@ -65,7 +90,6 @@ export class HognoseIndexer {
 
           this.processedReleases.add(release.tag_name);
           await this.saveProcessedReleases();
-          
         } catch (error) {
           const errorMsg = `Failed to process Hognose release ${release.tag_name}: ${error}`;
           logger.error(errorMsg);
@@ -78,31 +102,32 @@ export class HognoseIndexer {
           source: MapSource.HOGNOSE,
           current: i + 1,
           total: releases.length,
-          message: `Processing release ${release.name}...`
+          message: `Processing release ${release.name}...`,
         });
       }
 
-      logger.success(`Hognose indexing completed: ${levelsProcessed} levels processed, ${levelsSkipped} skipped`);
-      
+      logger.success(
+        `Hognose indexing completed: ${levelsProcessed} levels processed, ${levelsSkipped} skipped`
+      );
+
       return {
         success: true,
         levelsProcessed,
         levelsSkipped,
         errors,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
-
     } catch (error) {
       const errorMsg = `Hognose indexing failed: ${error}`;
       logger.error(errorMsg);
       errors.push(errorMsg);
-      
+
       return {
         success: false,
         levelsProcessed,
         levelsSkipped,
         errors,
-        duration: Date.now() - startTime
+        duration: Date.now() - startTime,
       };
     }
   }
@@ -111,30 +136,29 @@ export class HognoseIndexer {
     try {
       const apiUrl = `https://api.github.com/repos/${this.githubRepo}/releases`;
       logger.debug(`Fetching Hognose releases from: ${apiUrl}`);
-      
+
       const response = await fetch(apiUrl);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
-      const releases = await response.json() as any[];
-      
+
+      const releases = (await response.json()) as GitHubRelease[];
+
       const hognoseReleases: HognoseRelease[] = releases.map(release => ({
         id: release.id,
         tag_name: release.tag_name,
         name: release.name,
         body: release.body || '',
         published_at: release.published_at,
-        assets: release.assets.map((asset: any) => ({
+        assets: release.assets.map((asset: GitHubAsset) => ({
           name: asset.name,
           download_url: asset.browser_download_url,
-          size: asset.size
-        }))
+          size: asset.size,
+        })),
       }));
-      
+
       logger.info(`Found ${hognoseReleases.length} Hognose releases`);
       return hognoseReleases;
-      
     } catch (error) {
       logger.error('Failed to fetch Hognose releases:', error);
       throw error;
@@ -143,37 +167,33 @@ export class HognoseIndexer {
 
   private async processHognoseRelease(release: HognoseRelease): Promise<Level[]> {
     const levels: Level[] = [];
-    
+
     try {
       // Look for ZIP files in the release assets
-      const zipAssets = release.assets.filter(asset => 
-        asset.name.toLowerCase().endsWith('.zip')
-      );
-      
+      const zipAssets = release.assets.filter(asset => asset.name.toLowerCase().endsWith('.zip'));
+
       if (zipAssets.length === 0) {
         logger.debug(`No ZIP files found in release: ${release.tag_name}`);
         return levels;
       }
-      
+
       for (const zipAsset of zipAssets) {
         const tempDir = await FileUtils.createTempDir();
-        
+
         try {
           // Download the ZIP file
           const zipPath = path.join(tempDir, zipAsset.name);
           await this.downloadFile(zipAsset.download_url, zipPath);
-          
+
           // Extract and process .dat files
           const extractedLevels = await this.extractAndProcessZip(zipPath, release);
           levels.push(...extractedLevels);
-          
         } finally {
           await FileUtils.cleanupTempDir(tempDir);
         }
       }
-      
+
       return levels;
-      
     } catch (error) {
       logger.error(`Failed to process Hognose release ${release.tag_name}:`, error);
       return levels;
@@ -182,28 +202,28 @@ export class HognoseIndexer {
 
   private async extractAndProcessZip(zipPath: string, release: HognoseRelease): Promise<Level[]> {
     const levels: Level[] = [];
-    
+
     try {
       const tempExtractDir = await FileUtils.createTempDir();
-      
+
       // Extract ZIP file
-      await fs.createReadStream(zipPath)
+      await fs
+        .createReadStream(zipPath)
         .pipe(unzipper.Extract({ path: tempExtractDir }))
         .promise();
-      
+
       // Find all .dat files in the extracted directory
       const datFiles = await this.findDatFiles(tempExtractDir);
-      
+
       for (const datFile of datFiles) {
         const level = await this.createLevelFromDatFile(datFile, release);
         if (level) {
           levels.push(level);
         }
       }
-      
+
       await FileUtils.cleanupTempDir(tempExtractDir);
       return levels;
-      
     } catch (error) {
       logger.error(`Failed to extract ZIP file ${zipPath}:`, error);
       return levels;
@@ -212,12 +232,12 @@ export class HognoseIndexer {
 
   private async findDatFiles(dir: string): Promise<string[]> {
     const datFiles: string[] = [];
-    
+
     const items = await fs.readdir(dir);
     for (const item of items) {
       const itemPath = path.join(dir, item);
       const stat = await fs.stat(itemPath);
-      
+
       if (stat.isDirectory()) {
         const subDatFiles = await this.findDatFiles(itemPath);
         datFiles.push(...subDatFiles);
@@ -225,25 +245,28 @@ export class HognoseIndexer {
         datFiles.push(itemPath);
       }
     }
-    
+
     return datFiles;
   }
 
-  private async createLevelFromDatFile(datFilePath: string, release: HognoseRelease): Promise<Level | null> {
+  private async createLevelFromDatFile(
+    datFilePath: string,
+    release: HognoseRelease
+  ): Promise<Level | null> {
     try {
       const levelId = FileUtils.generateUniqueId();
       const levelDir = path.join(this.outputDir, 'levels', levelId);
       await FileUtils.ensureDir(levelDir);
-      
+
       const datFileName = path.basename(datFilePath);
       const localDatPath = path.join(levelDir, datFileName);
-      
+
       // Copy .dat file to level directory
       await FileUtils.copyFile(datFilePath, localDatPath);
-      
+
       // Extract level name from filename (remove .dat extension)
       const levelName = path.basename(datFileName, '.dat');
-      
+
       const metadata: LevelMetadata = {
         id: levelId,
         title: levelName,
@@ -253,28 +276,29 @@ export class HognoseIndexer {
         source: MapSource.HOGNOSE,
         sourceUrl: `https://github.com/${this.githubRepo}/releases/tag/${release.tag_name}`,
         originalId: `${release.tag_name}/${datFileName}`,
-        tags: ['hognose', 'github-release', release.tag_name]
+        tags: ['hognose', 'github-release', release.tag_name],
       };
-      
-      const levelFiles = [{
-        filename: datFileName,
-        path: localDatPath,
-        size: await FileUtils.getFileSize(localDatPath),
-        hash: await FileUtils.getFileHash(localDatPath),
-        type: 'dat' as const
-      }];
-      
+
+      const levelFiles = [
+        {
+          filename: datFileName,
+          path: localDatPath,
+          size: await FileUtils.getFileSize(localDatPath),
+          hash: await FileUtils.getFileHash(localDatPath),
+          type: 'dat' as const,
+        },
+      ];
+
       const level: Level = {
         metadata,
         files: levelFiles,
         catalogPath: levelDir,
         datFilePath: localDatPath,
         indexed: new Date(),
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
-      
+
       return level;
-      
     } catch (error) {
       logger.error(`Failed to create level from .dat file ${datFilePath}:`, error);
       return null;
@@ -286,12 +310,16 @@ export class HognoseIndexer {
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    
+
     if (response.body) {
       const fileStream = fs.createWriteStream(filePath);
       await new Promise<void>((resolve, reject) => {
-        response.body!.pipe(fileStream);
-        response.body!.on('error', reject);
+        if (!response.body) {
+          reject(new Error('Response body is null'));
+          return;
+        }
+        response.body.pipe(fileStream);
+        response.body.on('error', reject);
         fileStream.on('finish', resolve);
         fileStream.on('error', reject);
       });

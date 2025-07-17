@@ -48,7 +48,16 @@ async function testDiscordIndexer() {
   // Check what was downloaded
   const levelsDir = path.join(outputDir, 'levels');
   if (await fs.pathExists(levelsDir)) {
-    const levelDirs = await fs.readdir(levelsDir);
+    const allEntries = await fs.readdir(levelsDir);
+    // Filter out non-directories like .DS_Store
+    const levelDirs: string[] = [];
+    for (const entry of allEntries) {
+      const entryPath = path.join(levelsDir, entry);
+      const stat = await fs.stat(entryPath);
+      if (stat.isDirectory()) {
+        levelDirs.push(entry);
+      }
+    }
     logger.info(`\nCreated ${levelDirs.length} level directories`);
     
     // Sample check of first few levels

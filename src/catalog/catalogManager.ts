@@ -16,10 +16,10 @@ export class CatalogManager {
       sources: {
         [MapSource.ARCHIVE]: 0,
         [MapSource.DISCORD]: 0,
-        [MapSource.HOGNOSE]: 0
+        [MapSource.HOGNOSE]: 0,
       },
       lastUpdated: new Date(),
-      levels: []
+      levels: [],
     };
   }
 
@@ -27,7 +27,7 @@ export class CatalogManager {
     try {
       const indexPath = path.join(this.outputDir, CATALOG_FILENAMES.INDEX);
       const existingIndex = await FileUtils.readJSON<CatalogIndex>(indexPath);
-      
+
       if (existingIndex) {
         // Parse dates from strings
         this.catalogIndex = {
@@ -37,11 +37,11 @@ export class CatalogManager {
             ...level,
             metadata: {
               ...level.metadata,
-              postedDate: new Date(level.metadata.postedDate)
+              postedDate: new Date(level.metadata.postedDate),
             },
             indexed: new Date(level.indexed),
-            lastUpdated: new Date(level.lastUpdated)
-          }))
+            lastUpdated: new Date(level.lastUpdated),
+          })),
         };
         logger.info(`Loaded catalog index with ${this.catalogIndex.totalLevels} levels`);
       } else {
@@ -67,8 +67,10 @@ export class CatalogManager {
   async addLevel(level: Level): Promise<void> {
     try {
       // Check if level already exists
-      const existingIndex = this.catalogIndex.levels.findIndex(l => l.metadata.id === level.metadata.id);
-      
+      const existingIndex = this.catalogIndex.levels.findIndex(
+        l => l.metadata.id === level.metadata.id
+      );
+
       if (existingIndex !== -1) {
         // Update existing level
         this.catalogIndex.levels[existingIndex] = level;
@@ -80,7 +82,7 @@ export class CatalogManager {
         this.catalogIndex.totalLevels++;
         logger.debug(`Added new level: ${level.metadata.title}`);
       }
-      
+
       this.catalogIndex.lastUpdated = new Date();
       await this.saveCatalogIndex();
     } catch (error) {
@@ -92,25 +94,25 @@ export class CatalogManager {
   async removeLevel(levelId: string): Promise<boolean> {
     try {
       const levelIndex = this.catalogIndex.levels.findIndex(l => l.metadata.id === levelId);
-      
+
       if (levelIndex === -1) {
         logger.warn(`Level ${levelId} not found in catalog`);
         return false;
       }
-      
+
       const level = this.catalogIndex.levels[levelIndex];
-      
+
       // Remove level from index
       this.catalogIndex.levels.splice(levelIndex, 1);
       this.catalogIndex.sources[level.metadata.source]--;
       this.catalogIndex.totalLevels--;
-      
+
       // Remove level directory
       await FileUtils.deleteFile(level.catalogPath);
-      
+
       this.catalogIndex.lastUpdated = new Date();
       await this.saveCatalogIndex();
-      
+
       logger.info(`Removed level: ${level.metadata.title}`);
       return true;
     } catch (error) {
@@ -118,8 +120,6 @@ export class CatalogManager {
       return false;
     }
   }
-
-
 
   async getRecentLevels(limit = 10): Promise<Level[]> {
     return this.catalogIndex.levels
@@ -134,44 +134,44 @@ export class CatalogManager {
   async rebuildCatalogIndex(): Promise<void> {
     try {
       logger.info('Rebuilding catalog index from level directories...');
-      
+
       // Reset index
       this.catalogIndex = {
         totalLevels: 0,
         sources: {
           [MapSource.ARCHIVE]: 0,
           [MapSource.DISCORD]: 0,
-          [MapSource.HOGNOSE]: 0
+          [MapSource.HOGNOSE]: 0,
         },
         lastUpdated: new Date(),
-        levels: []
+        levels: [],
       };
-      
+
       // Scan levels directory
       const levelsDir = path.join(this.outputDir, 'levels');
       const levelDirectories = await FileUtils.listDirectories(levelsDir);
-      
+
       for (const levelDir of levelDirectories) {
         const catalogPath = path.join(levelsDir, levelDir, CATALOG_FILENAMES.LEVEL);
         const level = await FileUtils.readJSON<Level>(catalogPath);
-        
+
         if (level) {
           // Parse dates from strings
           const parsedLevel = {
             ...level,
             metadata: {
               ...level.metadata,
-              postedDate: new Date(level.metadata.postedDate)
+              postedDate: new Date(level.metadata.postedDate),
             },
             indexed: new Date(level.indexed),
-            lastUpdated: new Date(level.lastUpdated)
+            lastUpdated: new Date(level.lastUpdated),
           };
           this.catalogIndex.levels.push(parsedLevel);
           this.catalogIndex.sources[level.metadata.source]++;
           this.catalogIndex.totalLevels++;
         }
       }
-      
+
       await this.saveCatalogIndex();
       logger.success(`Rebuilt catalog index with ${this.catalogIndex.totalLevels} levels`);
     } catch (error) {
@@ -182,28 +182,28 @@ export class CatalogManager {
 
   async validateCatalog(): Promise<{ valid: boolean; errors: string[] }> {
     const errors: string[] = [];
-    
+
     try {
       logger.info('Validating catalog...');
-      
+
       for (const level of this.catalogIndex.levels) {
         // Check if level directory exists
         if (!(await fs.pathExists(level.catalogPath))) {
           errors.push(`Level directory missing: ${level.catalogPath}`);
           continue;
         }
-        
+
         // Check if dat file exists
         if (!(await fs.pathExists(level.datFilePath))) {
           errors.push(`DAT file missing for level ${level.metadata.title}: ${level.datFilePath}`);
         }
-        
+
         // Check if catalog file exists
         const catalogPath = path.join(level.catalogPath, CATALOG_FILENAMES.LEVEL);
         if (!(await fs.pathExists(catalogPath))) {
           errors.push(`Catalog file missing for level ${level.metadata.title}: ${catalogPath}`);
         }
-        
+
         // Validate file references
         for (const file of level.files) {
           if (!(await fs.pathExists(file.path))) {
@@ -211,7 +211,7 @@ export class CatalogManager {
           }
         }
       }
-      
+
       if (errors.length === 0) {
         logger.success('Catalog validation passed');
         return { valid: true, errors: [] };
@@ -228,7 +228,7 @@ export class CatalogManager {
 
   async exportCatalog(format: 'json' | 'csv' = 'json'): Promise<string> {
     const outputPath = path.join(this.outputDir, `catalog_export.${format}`);
-    
+
     try {
       if (format === 'json') {
         await FileUtils.writeJSON(outputPath, this.catalogIndex);
@@ -236,7 +236,7 @@ export class CatalogManager {
         const csvContent = this.generateCSV();
         await fs.writeFile(outputPath, csvContent);
       }
-      
+
       logger.success(`Exported catalog to ${outputPath}`);
       return outputPath;
     } catch (error) {
@@ -247,10 +247,19 @@ export class CatalogManager {
 
   private generateCSV(): string {
     const headers = [
-      'ID', 'Title', 'Author', 'Source', 'Posted Date', 'File Size', 
-      'Tags', 'Description', 'DAT File', 'Thumbnail', 'Screenshot'
+      'ID',
+      'Title',
+      'Author',
+      'Source',
+      'Posted Date',
+      'File Size',
+      'Tags',
+      'Description',
+      'DAT File',
+      'Thumbnail',
+      'Screenshot',
     ];
-    
+
     const rows = this.catalogIndex.levels.map(level => [
       level.metadata.id,
       level.metadata.title,
@@ -262,42 +271,47 @@ export class CatalogManager {
       level.metadata.description || '',
       level.datFilePath,
       level.thumbnailPath || '',
-      level.screenshotPath || ''
+      level.screenshotPath || '',
     ]);
-    
-    return [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
+
+    return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
   }
 
-  getCatalogStats(): { totalLevels: number; sources: Record<MapSource, number>; lastUpdated: Date } {
+  getCatalogStats(): {
+    totalLevels: number;
+    sources: Record<MapSource, number>;
+    lastUpdated: Date;
+  } {
     return {
       totalLevels: this.catalogIndex.totalLevels,
       sources: { ...this.catalogIndex.sources },
-      lastUpdated: this.catalogIndex.lastUpdated
+      lastUpdated: this.catalogIndex.lastUpdated,
     };
   }
 
   async getDuplicateLevels(): Promise<Level[][]> {
     const duplicates: Level[][] = [];
     const titleMap = new Map<string, Level[]>();
-    
+
     // Group levels by title
     for (const level of this.catalogIndex.levels) {
       const title = level.metadata.title.toLowerCase();
       if (!titleMap.has(title)) {
         titleMap.set(title, []);
       }
-      titleMap.get(title)!.push(level);
+      const levels = titleMap.get(title);
+      if (levels) {
+        levels.push(level);
+      }
     }
-    
+
     // Find duplicates
-    for (const [_title, levels] of titleMap.entries()) {
+    for (const levels of titleMap.values()) {
       if (levels.length > 1) {
         duplicates.push(levels);
       }
     }
-    
+
     return duplicates;
   }
 }

@@ -18,6 +18,8 @@
     "test:coverage": "jest --coverage",
     "test:example": "ts-node examples/basic-usage.ts",
     "test:archive": "ts-node test-archive.ts",
+    "test:archive:improved": "ts-node test-improved-archive.ts",
+    "test:archive:v2": "ts-node test-improved-archive-v2.ts",
     "test:discord": "ts-node test-discord.ts",
     "test:hognose": "ts-node test-hognose.ts",
     "test:all": "ts-node test-all-indexers.ts",

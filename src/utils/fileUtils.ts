@@ -13,7 +13,7 @@ export class FileUtils {
     }
   }
 
-  static async writeJSON(filePath: string, data: any): Promise<void> {
+  static async writeJSON<T = unknown>(filePath: string, data: T): Promise<void> {
     try {
       await fs.writeJson(filePath, data, { spaces: 2 });
     } catch (error) {
@@ -139,6 +139,23 @@ export class FileUtils {
       await fs.remove(tempDir);
     } catch (error) {
       logger.warn(`Failed to cleanup temp directory: ${tempDir}`, error);
+    }
+  }
+
+  static async fileExists(filePath: string): Promise<boolean> {
+    try {
+      return await fs.pathExists(filePath);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  static async getFileStats(filePath: string): Promise<fs.Stats> {
+    try {
+      return await fs.stat(filePath);
+    } catch (error) {
+      logger.error(`Failed to get file stats: ${filePath}`, error);
+      throw error;
     }
   }
 }

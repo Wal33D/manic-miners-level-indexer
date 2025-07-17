@@ -4,7 +4,7 @@ export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
   WARN = 2,
-  ERROR = 3
+  ERROR = 3,
 }
 
 export class Logger {
@@ -24,31 +24,31 @@ export class Logger {
     this.logLevel = level;
   }
 
-  debug(message: string, ...args: any[]): void {
+  debug(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.DEBUG) {
       console.log(chalk.gray(`[DEBUG] ${message}`), ...args);
     }
   }
 
-  info(message: string, ...args: any[]): void {
+  info(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.INFO) {
       console.log(chalk.blue(`[INFO]  ${message}`), ...args);
     }
   }
 
-  warn(message: string, ...args: any[]): void {
+  warn(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.WARN) {
       console.log(chalk.yellow(`[WARN]  ${message}`), ...args);
     }
   }
 
-  error(message: string, ...args: any[]): void {
+  error(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.ERROR) {
       console.log(chalk.red(`[ERROR] ${message}`), ...args);
     }
   }
 
-  success(message: string, ...args: any[]): void {
+  success(message: string, ...args: unknown[]): void {
     console.log(chalk.green(`[SUCCESS] ${message}`), ...args);
   }
 

@@ -16,7 +16,7 @@ export class ConfigManager {
   async loadConfig(): Promise<IndexerConfig> {
     try {
       const existingConfig = await FileUtils.readJSON<Partial<IndexerConfig>>(this.configPath);
-      
+
       if (existingConfig) {
         // Merge with default config
         this.config = this.mergeConfigs(defaultConfig, existingConfig);
@@ -25,7 +25,7 @@ export class ConfigManager {
         logger.info('No configuration file found, using default config');
         await this.saveConfig();
       }
-      
+
       return this.config;
     } catch (error) {
       logger.error('Failed to load configuration:', error);
@@ -66,7 +66,10 @@ export class ConfigManager {
     this.config.sources[source].enabled = false;
   }
 
-  updateSourceConfig(source: keyof IndexerConfig['sources'], updates: any): void {
+  updateSourceConfig<T extends keyof IndexerConfig['sources']>(
+    source: T,
+    updates: Partial<IndexerConfig['sources'][T]>
+  ): void {
     this.config.sources[source] = { ...this.config.sources[source], ...updates };
   }
 
@@ -113,7 +116,9 @@ export class ConfigManager {
   }
 
   removeDiscordChannel(channel: string): void {
-    this.config.sources.discord.channels = this.config.sources.discord.channels.filter(c => c !== channel);
+    this.config.sources.discord.channels = this.config.sources.discord.channels.filter(
+      c => c !== channel
+    );
   }
 
   setDiscordMaxPages(maxPages: number): void {
@@ -159,7 +164,10 @@ export class ConfigManager {
 
     // Validate Discord source
     if (this.config.sources.discord.enabled) {
-      if (!this.config.sources.discord.channels || this.config.sources.discord.channels.length === 0) {
+      if (
+        !this.config.sources.discord.channels ||
+        this.config.sources.discord.channels.length === 0
+      ) {
         errors.push('Discord channels are required when Discord source is enabled');
       }
       if (!this.config.sources.discord.maxPages || this.config.sources.discord.maxPages < 1) {
@@ -172,17 +180,26 @@ export class ConfigManager {
       if (!this.config.sources.hognose.githubRepo) {
         errors.push('Hognose GitHub repository is required when Hognose source is enabled');
       }
-      if (!this.config.sources.hognose.checkInterval || this.config.sources.hognose.checkInterval < 1000) {
+      if (
+        !this.config.sources.hognose.checkInterval ||
+        this.config.sources.hognose.checkInterval < 1000
+      ) {
         errors.push('Hognose check interval must be at least 1000ms');
       }
     }
 
     // Validate rendering configuration
-    if (this.config.rendering.thumbnailSize.width < 1 || this.config.rendering.thumbnailSize.height < 1) {
+    if (
+      this.config.rendering.thumbnailSize.width < 1 ||
+      this.config.rendering.thumbnailSize.height < 1
+    ) {
       errors.push('Thumbnail size must be greater than 0');
     }
 
-    if (this.config.rendering.screenshotSize.width < 1 || this.config.rendering.screenshotSize.height < 1) {
+    if (
+      this.config.rendering.screenshotSize.width < 1 ||
+      this.config.rendering.screenshotSize.height < 1
+    ) {
       errors.push('Screenshot size must be greater than 0');
     }
 
@@ -194,7 +211,7 @@ export class ConfigManager {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -213,7 +230,7 @@ export class ConfigManager {
         ...merged.sources,
         archive: { ...merged.sources.archive, ...updates.sources.archive },
         discord: { ...merged.sources.discord, ...updates.sources.discord },
-        hognose: { ...merged.sources.hognose, ...updates.sources.hognose }
+        hognose: { ...merged.sources.hognose, ...updates.sources.hognose },
       };
     }
 
@@ -223,16 +240,17 @@ export class ConfigManager {
         ...updates.rendering,
         thumbnailSize: { ...merged.rendering.thumbnailSize, ...updates.rendering.thumbnailSize },
         screenshotSize: { ...merged.rendering.screenshotSize, ...updates.rendering.screenshotSize },
-        biomeColors: { ...merged.rendering.biomeColors, ...updates.rendering.biomeColors }
+        biomeColors: { ...merged.rendering.biomeColors, ...updates.rendering.biomeColors },
       };
     }
 
     // Handle primitive properties
-    Object.keys(updates).forEach(key => {
-      if (key !== 'sources' && key !== 'rendering') {
-        (merged as any)[key] = (updates as any)[key];
-      }
-    });
+    if (updates.outputDir !== undefined) merged.outputDir = updates.outputDir;
+    if (updates.tempDir !== undefined) merged.tempDir = updates.tempDir;
+    if (updates.generateThumbnails !== undefined)
+      merged.generateThumbnails = updates.generateThumbnails;
+    if (updates.generateScreenshots !== undefined)
+      merged.generateScreenshots = updates.generateScreenshots;
 
     return merged;
   }
@@ -243,33 +261,33 @@ export class ConfigManager {
       ...defaultConfig,
       // Add comments as properties (will be ignored by JSON.parse but useful for users)
       _comments: {
-        outputDir: "Directory where all indexed levels and catalogs will be stored",
-        tempDir: "Temporary directory for processing files",
-        generateThumbnails: "Whether to generate thumbnail images for levels",
-        generateScreenshots: "Whether to generate full-size screenshots for levels",
+        outputDir: 'Directory where all indexed levels and catalogs will be stored',
+        tempDir: 'Temporary directory for processing files',
+        generateThumbnails: 'Whether to generate thumbnail images for levels',
+        generateScreenshots: 'Whether to generate full-size screenshots for levels',
         sources: {
           archive: {
-            enabled: "Enable Internet Archive indexing",
-            baseUrl: "Base URL for Internet Archive API",
-            maxPages: "Maximum number of pages to scrape from archive"
+            enabled: 'Enable Internet Archive indexing',
+            baseUrl: 'Base URL for Internet Archive API',
+            maxPages: 'Maximum number of pages to scrape from archive',
           },
           discord: {
-            enabled: "Enable Discord channel indexing",
-            channels: "List of Discord channel URLs to scrape",
-            maxPages: "Maximum number of pages to scrape per channel"
+            enabled: 'Enable Discord channel indexing',
+            channels: 'List of Discord channel URLs to scrape',
+            maxPages: 'Maximum number of pages to scrape per channel',
           },
           hognose: {
-            enabled: "Enable Hognose GitHub releases indexing",
+            enabled: 'Enable Hognose GitHub releases indexing',
             githubRepo: "GitHub repository in format 'owner/repo'",
-            checkInterval: "Interval in milliseconds to check for new releases"
-          }
+            checkInterval: 'Interval in milliseconds to check for new releases',
+          },
         },
         rendering: {
-          thumbnailSize: "Size of generated thumbnail images",
-          screenshotSize: "Size of generated screenshot images",
-          biomeColors: "Color mapping for different biome types"
-        }
-      }
+          thumbnailSize: 'Size of generated thumbnail images',
+          screenshotSize: 'Size of generated screenshot images',
+          biomeColors: 'Color mapping for different biome types',
+        },
+      },
     };
 
     await FileUtils.writeJSON(templatePath, template);

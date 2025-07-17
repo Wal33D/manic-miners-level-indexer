@@ -34,10 +34,18 @@ export interface ArchiveFile {
   original?: string;
 }
 
+export interface ArchiveReview {
+  reviewbody?: string;
+  reviewtitle?: string;
+  reviewer?: string;
+  reviewdate?: string;
+  stars?: string;
+}
+
 export interface ArchiveItemDetails {
   metadata: ArchiveMetadata;
   files: ArchiveFile[];
-  reviews?: any[];
+  reviews?: ArchiveReview[];
   server?: string;
   uniq?: number;
   updated?: number;
@@ -78,6 +86,7 @@ export interface ArchiveIndexerConfig {
   };
   maxConcurrentMetadata?: number;
   maxConcurrentDownloads?: number;
+  maxConcurrentProcessing?: number; // How many items to process in parallel
   enableCache?: boolean;
   cacheExpiry?: number; // seconds
   retryAttempts?: number;
