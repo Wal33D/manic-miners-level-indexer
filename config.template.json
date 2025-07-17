@@ -7,7 +7,6 @@
     "archive": {
       "enabled": true,
       "baseUrl": "https://archive.org/advancedsearch.php",
-      "maxPages": 10,
       "concurrentDownloads": 3,
       "searchQueries": ["Manic Miners"],
       "dateRange": {
@@ -19,8 +18,7 @@
       "enabled": true,
       "channels": [
         "https://discord.com/channels/YOUR_SERVER_ID/YOUR_CHANNEL_ID"
-      ],
-      "maxPages": 50
+      ]
     },
     "hognose": {
       "enabled": true,
