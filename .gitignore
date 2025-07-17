@@ -3,10 +3,13 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.npm
+.yarn-integrity
 
 # Build outputs
 dist/
 build/
+*.tsbuildinfo
 
 # Environment files
 .env
@@ -24,12 +27,11 @@ config.*.json
 output/
 temp/
 test-output/
-test-temp/
+levels/
 
 # OS files
 .DS_Store
 Thumbs.db
-*.log
 
 # IDE files
 .vscode/
@@ -46,6 +48,8 @@ coverage/
 # Cache
 .cache/
 .parcel-cache/
+.eslintcache
+.prettierCache
 
 # Browser data (from Discord scraping)
 chromeData/
@@ -70,36 +74,13 @@ pids/
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
-coverage/
-
-# ESLint cache
-.eslintcache
-
-# Prettier cache
-.prettierCache
-
-# TypeScript cache
-*.tsbuildinfo
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
 # Optional REPL history
 .node_repl_history
 
 # Output of 'npm pack'
 *.tgz
 
-# Yarn Integrity file
-.yarn-integrity
-
-# Test output and screenshots
-test-output/
-hognose-verification-output/
+# Images (test screenshots)
 *.png
 *.jpg
 *.jpeg
@@ -109,9 +90,7 @@ discord-debug.png
 discord_processed.json
 catalog_index.json
 master_index.json
-
-# Level data directories
-levels/
+hognose_processed.json
 
 # Claude files (workspace)
 .claude/

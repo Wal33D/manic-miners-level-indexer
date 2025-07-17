@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 import path from 'path';
 
 describe('FileUtils', () => {
-  const testDir = path.join(process.cwd(), 'test-temp');
+  const testDir = path.join(process.cwd(), 'test-output', 'temp', 'file-utils-tests');
 
   beforeEach(async () => {
     await fs.ensureDir(testDir);

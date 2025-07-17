@@ -6,7 +6,7 @@ import fs from 'fs-extra';
 import path from 'path';
 
 async function verifyHognoseComplete() {
-  const outputDir = './hognose-verification-output';
+  const outputDir = './test-output/integration/hognose-verification';
   const githubRepo = 'charredUtensil/hognose';
 
   // Clean start

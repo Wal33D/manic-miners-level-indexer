@@ -5,8 +5,8 @@ import fs from 'fs-extra';
 
 async function testAllIndexers() {
   const config: IndexerConfig = {
-    outputDir: './test-output',
-    tempDir: './test-temp',
+    outputDir: './test-output/integration/all-indexers',
+    tempDir: './test-output/temp/all-indexers',
     generateThumbnails: true,
     generateScreenshots: true,
     sources: {

@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import path from 'path';
 
 async function testDiscordIndexer() {
-  const outputDir = './test-output';
+  const outputDir = './test-output/integration/discord';
   const channels = ['https://discord.com/channels/580269696369164299/1139908458968252457'];
 
   // Clean up previous test output

@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import path from 'path';
 
 async function testHognoseIndexer() {
-  const outputDir = './test-output';
+  const outputDir = './test-output/integration/hognose';
   const githubRepo = 'charredUtensil/hognose';
 
   // Clean up previous test output

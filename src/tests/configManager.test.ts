@@ -6,7 +6,7 @@ import fs from 'fs-extra';
 import path from 'path';
 
 describe('ConfigManager', () => {
-  const testDir = path.join(process.cwd(), 'test-temp');
+  const testDir = path.join(process.cwd(), 'test-output', 'temp', 'config-tests');
   const configPath = path.join(testDir, 'test-config.json');
   let configManager: ConfigManager;
 
