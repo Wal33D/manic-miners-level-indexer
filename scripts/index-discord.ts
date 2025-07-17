@@ -3,6 +3,10 @@ import { IndexerConfig, MapSource } from '../src/types';
 import { logger } from '../src/utils/logger';
 import fs from 'fs-extra';
 import path from 'path';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 async function loadConfig(): Promise<IndexerConfig> {
   const configPath = path.join(process.cwd(), 'config.json');

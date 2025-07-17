@@ -41,6 +41,7 @@
     "archiver": "^6.0.0",
     "canvas": "^2.11.2",
     "chalk": "^4.1.2",
+    "dotenv": "^17.2.0",
     "fs-extra": "^11.1.0",
     "node-fetch": "^2.7.0",
     "p-limit": "^3.1.0",

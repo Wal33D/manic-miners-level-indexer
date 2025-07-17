@@ -7,7 +7,7 @@
     "archive": {
       "enabled": true,
       "baseUrl": "https://archive.org/advancedsearch.php",
-      "concurrentDownloads": 3,
+      "concurrentDownloads": 5,
       "searchQueries": ["Manic Miners"],
       "dateRange": {
         "from": "2020-01-01",
@@ -16,9 +16,7 @@
     },
     "discord": {
       "enabled": true,
-      "channels": [
-        "https://discord.com/channels/YOUR_SERVER_ID/YOUR_CHANNEL_ID"
-      ]
+      "channels": ["https://discord.com/channels/YOUR_SERVER_ID/YOUR_CHANNEL_ID"]
     },
     "hognose": {
       "enabled": true,

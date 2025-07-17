@@ -5,6 +5,10 @@ import path from 'path';
 import { TestPaths } from '../../src/tests/test-config';
 import { getSourceLevelsDir } from '../../src/utils/sourceUtils';
 import { MapSource } from '../../src/types';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 async function testDiscordIndexer() {
   const outputDir = TestPaths.integration.discord;
