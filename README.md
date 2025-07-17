@@ -16,7 +16,7 @@ A unified indexing system for Manic Miners levels that combines archive scraping
 - **Visual Processing**: Generates thumbnails and screenshots from .dat files
 - **Catalog Management**: Organizes levels with searchable metadata
 - **Master Index**: Creates searchable indexes for efficient level discovery
-- **CLI Interface**: Easy-to-use command-line interface for all operations
+- **Script-based Operations**: Simple npm scripts for all indexing operations
 
 ## Quick Start
 
@@ -42,25 +42,20 @@ cp config.production.example.json config.json
 
 ### Basic Usage
 
-Using npm scripts (recommended):
+Using npm scripts:
 ```bash
+# Index from all enabled sources
+npm run index
+
 # Index from specific sources
-npm run discord    # Run Discord indexer
-npm run ia         # Run Internet Archive indexer  
-npm run hognose    # Run Hognose indexer
+npm run index:archive    # Run Internet Archive indexer
+npm run index:discord    # Run Discord indexer
+npm run index:hognose    # Run Hognose indexer
 
-# Other commands
-npm run index      # Index from all sources
-npm run render     # Generate thumbnails/screenshots
-npm run stats      # View statistics
-npm run search "crystal"  # Search for levels
-```
-
-Or using the CLI directly:
-```bash
-node dist/index.js index-source archive
-node dist/index.js index-source discord
-node dist/index.js search "level name"
+# Test scripts for individual indexers
+npm run test:archive     # Test archive indexer
+npm run test:discord     # Test Discord indexer
+npm run test:hognose     # Test Hognose indexer
 ```
 
 ## Architecture
@@ -71,7 +66,7 @@ node dist/index.js search "level name"
 - **Renderer**: Generates visual representations of levels
 - **Catalog Manager**: Organizes and manages level metadata
 - **Master Indexer**: Coordinates all operations and builds searchable indexes
-- **CLI**: Provides command-line interface for all operations
+- **Scripts**: Dedicated scripts for each indexing operation
 
 ### Data Flow
 
@@ -155,28 +150,29 @@ npm run build
 npm start
 ```
 
-## CLI Commands
+## Available Scripts
 
-### Core Commands
+### Indexing Scripts
 
-- `index` - Index all levels from all sources
-- `index-source <source>` - Index from specific source
-- `render` - Generate thumbnails and screenshots
-- `search <query>` - Search for levels
-- `stats` - Display catalog statistics
-- `export` - Export catalog to JSON or CSV
+- `npm run index` - Index all levels from all enabled sources
+- `npm run index:archive` - Index from Internet Archive only
+- `npm run index:discord` - Index from Discord only
+- `npm run index:hognose` - Index from Hognose GitHub releases only
 
-### Configuration Commands
+### Testing Scripts
 
-- `config show` - Display current configuration
-- `config validate` - Validate configuration
-- `config template` - Create configuration template
+- `npm run test` - Run unit tests
+- `npm run test:archive` - Test archive indexer
+- `npm run test:discord` - Test Discord indexer
+- `npm run test:hognose` - Test Hognose indexer
 
-### Source Management
+### Development Scripts
 
-- `source enable <source>` - Enable a source
-- `source disable <source>` - Disable a source
-- `source list` - List all sources and their status
+- `npm run build` - Build TypeScript to JavaScript
+- `npm run dev` - Run in development mode
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
+- `npm run type-check` - Check TypeScript types
 
 ## Output Structure
 
