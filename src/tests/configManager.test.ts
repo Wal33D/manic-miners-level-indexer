@@ -4,9 +4,10 @@ import { FileUtils } from '../utils/fileUtils';
 import { IndexerConfig } from '../types';
 import fs from 'fs-extra';
 import path from 'path';
+import { TestPaths } from './test-config';
 
 describe('ConfigManager', () => {
-  const testDir = path.join(process.cwd(), 'test-output', 'temp', 'config-tests');
+  const testDir = TestPaths.unit.configManager;
   const configPath = path.join(testDir, 'test-config.json');
   let configManager: ConfigManager;
 

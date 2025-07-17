@@ -40,6 +40,7 @@ async function main() {
     logger.info(`Archive levels: ${stats.sources[MapSource.ARCHIVE] || 0}`);
 
     logger.success('\nArchive indexing completed successfully!');
+    process.exit(0);
   } catch (error) {
     logger.error('Archive indexing failed:', error);
     process.exit(1);

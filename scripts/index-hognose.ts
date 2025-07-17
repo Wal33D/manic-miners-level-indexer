@@ -40,6 +40,7 @@ async function main() {
     logger.info(`Hognose levels: ${stats.sources[MapSource.HOGNOSE] || 0}`);
 
     logger.success('\nHognose indexing completed successfully!');
+    process.exit(0);
   } catch (error) {
     logger.error('Hognose indexing failed:', error);
     process.exit(1);

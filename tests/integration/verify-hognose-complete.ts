@@ -4,9 +4,10 @@ import { MapSource } from '../../src/types';
 import { logger } from '../../src/utils/logger';
 import fs from 'fs-extra';
 import path from 'path';
+import { TestPaths } from '../../src/tests/test-config';
 
 async function verifyHognoseComplete() {
-  const outputDir = './test-output/integration/hognose-verification';
+  const outputDir = TestPaths.integration.verification;
   const githubRepo = 'charredUtensil/hognose';
 
   // Clean start

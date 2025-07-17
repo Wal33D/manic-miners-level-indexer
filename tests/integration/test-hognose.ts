@@ -2,9 +2,10 @@ import { HognoseIndexer } from '../../src/indexers/hognoseIndexer';
 import { logger } from '../../src/utils/logger';
 import fs from 'fs-extra';
 import path from 'path';
+import { TestPaths } from '../../src/tests/test-config';
 
 async function testHognoseIndexer() {
-  const outputDir = './test-output/integration/hognose';
+  const outputDir = TestPaths.integration.hognose;
   const githubRepo = 'charredUtensil/hognose';
 
   // Clean up previous test output

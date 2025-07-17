@@ -1,9 +1,10 @@
 import { FileUtils } from '../utils/fileUtils';
 import fs from 'fs-extra';
 import path from 'path';
+import { TestPaths } from './test-config';
 
 describe('FileUtils', () => {
-  const testDir = path.join(process.cwd(), 'test-output', 'temp', 'file-utils-tests');
+  const testDir = TestPaths.unit.fileUtils;
 
   beforeEach(async () => {
     await fs.ensureDir(testDir);

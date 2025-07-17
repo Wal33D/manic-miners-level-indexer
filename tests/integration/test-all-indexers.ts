@@ -2,11 +2,12 @@ import { MasterIndexer } from '../../src/catalog/masterIndexer';
 import { IndexerConfig } from '../../src/types';
 import { logger } from '../../src/utils/logger';
 import fs from 'fs-extra';
+import { TestPaths } from '../../src/tests/test-config';
 
 async function testAllIndexers() {
   const config: IndexerConfig = {
-    outputDir: './test-output/integration/all-indexers',
-    tempDir: './test-output/temp/all-indexers',
+    outputDir: TestPaths.integration.all,
+    tempDir: TestPaths.temp.integration,
     generateThumbnails: true,
     generateScreenshots: true,
     sources: {

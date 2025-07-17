@@ -29,6 +29,10 @@ temp/
 test-output/
 levels/
 
+# Consolidated test outputs
+.test-outputs/
+test-temp/
+
 # OS files
 .DS_Store
 Thumbs.db

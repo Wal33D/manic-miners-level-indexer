@@ -40,6 +40,7 @@ async function main() {
     logger.info(`Discord levels: ${stats.sources[MapSource.DISCORD] || 0}`);
 
     logger.success('\nDiscord indexing completed successfully!');
+    process.exit(0);
   } catch (error) {
     logger.error('Discord indexing failed:', error);
     process.exit(1);

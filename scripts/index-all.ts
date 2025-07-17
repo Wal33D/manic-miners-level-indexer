@@ -43,6 +43,7 @@ async function main() {
     });
 
     logger.success('\nIndexing completed successfully!');
+    process.exit(0);
   } catch (error) {
     logger.error('Indexing failed:', error);
     process.exit(1);

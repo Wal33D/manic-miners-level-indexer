@@ -2,9 +2,10 @@ import { DiscordIndexer } from '../../src/indexers/discordIndexer';
 import { logger } from '../../src/utils/logger';
 import fs from 'fs-extra';
 import path from 'path';
+import { TestPaths } from '../../src/tests/test-config';
 
 async function testDiscordIndexer() {
-  const outputDir = './test-output/integration/discord';
+  const outputDir = TestPaths.integration.discord;
   const channels = ['https://discord.com/channels/580269696369164299/1139908458968252457'];
 
   // Clean up previous test output
