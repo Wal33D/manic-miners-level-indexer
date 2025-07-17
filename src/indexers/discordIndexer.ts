@@ -9,6 +9,7 @@ import {
 } from '../types';
 import { logger } from '../utils/logger';
 import { FileUtils } from '../utils/fileUtils';
+import { getSourceLevelsDir } from '../utils/sourceUtils';
 import path from 'path';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
@@ -856,7 +857,7 @@ export class DiscordIndexer {
   ): Promise<Level | null> {
     try {
       const levelId = FileUtils.generateUniqueId();
-      const levelDir = path.join(this.outputDir, 'levels', levelId);
+      const levelDir = path.join(this.outputDir, getSourceLevelsDir(MapSource.DISCORD), levelId);
       await FileUtils.ensureDir(levelDir);
 
       const datFileName = FileUtils.sanitizeFilename(attachment.filename);

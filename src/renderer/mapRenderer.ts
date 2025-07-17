@@ -2,6 +2,7 @@ import { createCanvas, CanvasRenderingContext2D } from 'canvas';
 import { MapData, TileData, Biome, Level } from '../types';
 import { logger } from '../utils/logger';
 import { FileUtils } from '../utils/fileUtils';
+import { getAllSourceLevelsDirs } from '../utils/sourceUtils';
 import { BIOME_MAPPINGS, defaultConfig } from '../config/default';
 import path from 'path';
 import fs from 'fs-extra';
@@ -258,30 +259,53 @@ export class MapRenderer {
     progressCallback?: (current: number, total: number, levelName: string) => void
   ): Promise<void> {
     try {
-      const levelsDir = path.join(outputDir, 'levels');
-      const levelDirectories = await FileUtils.listDirectories(levelsDir);
+      const sourceDirs = getAllSourceLevelsDirs();
+      let totalLevels = 0;
+      let currentLevel = 0;
 
-      logger.info(`Rendering ${levelDirectories.length} levels...`);
-
-      for (let i = 0; i < levelDirectories.length; i++) {
-        const levelDir = path.join(levelsDir, levelDirectories[i]);
-
-        try {
-          const catalogPath = path.join(levelDir, 'catalog.json');
-          const level = await FileUtils.readJSON<Level>(catalogPath);
-
-          if (level) {
-            await this.renderLevel(level);
-            await FileUtils.writeJSON(catalogPath, level);
-
-            progressCallback?.(i + 1, levelDirectories.length, level.metadata.title);
-          }
-        } catch (error) {
-          logger.error(`Failed to render level in ${levelDir}:`, error);
+      // First count total levels
+      for (const sourceDir of sourceDirs) {
+        const levelsDir = path.join(outputDir, sourceDir);
+        if (await fs.pathExists(levelsDir)) {
+          const dirs = await FileUtils.listDirectories(levelsDir);
+          totalLevels += dirs.length;
         }
       }
 
-      logger.success(`Completed rendering ${levelDirectories.length} levels`);
+      logger.info(`Rendering ${totalLevels} levels across all sources...`);
+
+      // Now render levels from each source
+      for (const sourceDir of sourceDirs) {
+        const levelsDir = path.join(outputDir, sourceDir);
+
+        if (!(await fs.pathExists(levelsDir))) {
+          continue;
+        }
+
+        const levelDirectories = await FileUtils.listDirectories(levelsDir);
+        logger.info(`Rendering ${levelDirectories.length} levels from ${sourceDir}...`);
+
+        for (const levelDirName of levelDirectories) {
+          const levelDir = path.join(levelsDir, levelDirName);
+
+          try {
+            const catalogPath = path.join(levelDir, 'catalog.json');
+            const level = await FileUtils.readJSON<Level>(catalogPath);
+
+            if (level) {
+              await this.renderLevel(level);
+              await FileUtils.writeJSON(catalogPath, level);
+
+              currentLevel++;
+              progressCallback?.(currentLevel, totalLevels, level.metadata.title);
+            }
+          } catch (error) {
+            logger.error(`Failed to render level in ${levelDir}:`, error);
+          }
+        }
+      }
+
+      logger.success(`Completed rendering ${totalLevels} levels`);
     } catch (error) {
       logger.error(`Failed to render all levels:`, error);
       throw error;

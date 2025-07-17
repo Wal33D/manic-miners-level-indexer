@@ -5,6 +5,7 @@ import { logger } from '../../src/utils/logger';
 import fs from 'fs-extra';
 import path from 'path';
 import { TestPaths } from '../../src/tests/test-config';
+import { getSourceLevelsDir } from '../../src/utils/sourceUtils';
 
 async function verifyHognoseComplete() {
   const outputDir = TestPaths.integration.verification;
@@ -37,7 +38,7 @@ async function verifyHognoseComplete() {
   // Verify file structure
   logger.info('\n=== Verifying File Structure ===');
 
-  const levelsDir = path.join(outputDir, 'levels');
+  const levelsDir = path.join(outputDir, getSourceLevelsDir(MapSource.HOGNOSE));
   if (!(await fs.pathExists(levelsDir))) {
     logger.error('Levels directory does not exist!');
     return;

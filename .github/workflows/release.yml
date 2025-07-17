@@ -43,7 +43,7 @@ jobs:
           config.template.json
     
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: manic-miners-level-indexer-${{ github.ref_name }}.tar.gz
         generate_release_notes: true

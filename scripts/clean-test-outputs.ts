@@ -48,7 +48,9 @@ async function cleanTestOutputs(includeProduction = false) {
     }
   }
 
-  logger.success(`${mode.charAt(0).toUpperCase() + mode.slice(1)} directories cleaned successfully!`);
+  logger.success(
+    `${mode.charAt(0).toUpperCase() + mode.slice(1)} directories cleaned successfully!`
+  );
 }
 
 // Run if called directly

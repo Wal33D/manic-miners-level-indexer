@@ -4,6 +4,7 @@ import fetch from 'node-fetch';
 import { EventEmitter } from 'events';
 import { logger } from '../../utils/logger';
 import { FileUtils } from '../../utils/fileUtils';
+import { getSourceLevelsDir } from '../../utils/sourceUtils';
 import {
   Level,
   LevelMetadata,
@@ -252,7 +253,7 @@ export class ImprovedArchiveIndexerV2 extends EventEmitter {
 
       // Step 3: Create level directory and metadata
       const levelId = FileUtils.generateUniqueId();
-      const levelDir = path.join(this.outputDir, 'levels', levelId);
+      const levelDir = path.join(this.outputDir, getSourceLevelsDir(MapSource.ARCHIVE), levelId);
       await FileUtils.ensureDir(levelDir);
 
       const levelMetadata: LevelMetadata = {

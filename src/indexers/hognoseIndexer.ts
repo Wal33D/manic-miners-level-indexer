@@ -10,6 +10,7 @@ import {
 } from '../types';
 import { logger } from '../utils/logger';
 import { FileUtils } from '../utils/fileUtils';
+import { getSourceLevelsDir } from '../utils/sourceUtils';
 import path from 'path';
 import fs from 'fs-extra';
 
@@ -315,7 +316,7 @@ export class HognoseIndexer {
   ): Promise<Level | null> {
     try {
       const levelId = FileUtils.generateUniqueId();
-      const levelDir = path.join(this.outputDir, 'levels', levelId);
+      const levelDir = path.join(this.outputDir, getSourceLevelsDir(MapSource.HOGNOSE), levelId);
       await FileUtils.ensureDir(levelDir);
 
       const datFileName = path.basename(datFilePath);

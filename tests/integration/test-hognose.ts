@@ -3,6 +3,8 @@ import { logger } from '../../src/utils/logger';
 import fs from 'fs-extra';
 import path from 'path';
 import { TestPaths } from '../../src/tests/test-config';
+import { getSourceLevelsDir } from '../../src/utils/sourceUtils';
+import { MapSource } from '../../src/types';
 
 async function testHognoseIndexer() {
   const outputDir = TestPaths.integration.hognose;
@@ -41,7 +43,7 @@ async function testHognoseIndexer() {
   }
 
   // Check what was downloaded
-  const levelsDir = path.join(outputDir, 'levels');
+  const levelsDir = path.join(outputDir, getSourceLevelsDir(MapSource.HOGNOSE));
   if (await fs.pathExists(levelsDir)) {
     const allEntries = await fs.readdir(levelsDir);
     // Filter out non-directories like .DS_Store

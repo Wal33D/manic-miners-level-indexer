@@ -1,6 +1,7 @@
 import { Level, CatalogIndex, MapSource } from '../types';
 import { logger } from '../utils/logger';
 import { FileUtils } from '../utils/fileUtils';
+import { getAllSourceLevelsDirs } from '../utils/sourceUtils';
 import { CATALOG_FILENAMES } from '../config/default';
 import path from 'path';
 import fs from 'fs-extra';
@@ -194,28 +195,38 @@ export class CatalogManager {
         levels: [],
       };
 
-      // Scan levels directory
-      const levelsDir = path.join(this.outputDir, 'levels');
-      const levelDirectories = await FileUtils.listDirectories(levelsDir);
+      // Scan all source level directories
+      const sourceDirs = getAllSourceLevelsDirs();
 
-      for (const levelDir of levelDirectories) {
-        const catalogPath = path.join(levelsDir, levelDir, CATALOG_FILENAMES.LEVEL);
-        const level = await FileUtils.readJSON<Level>(catalogPath);
+      for (const sourceDir of sourceDirs) {
+        const levelsDir = path.join(this.outputDir, sourceDir);
 
-        if (level) {
-          // Parse dates from strings
-          const parsedLevel = {
-            ...level,
-            metadata: {
-              ...level.metadata,
-              postedDate: new Date(level.metadata.postedDate),
-            },
-            indexed: new Date(level.indexed),
-            lastUpdated: new Date(level.lastUpdated),
-          };
-          this.catalogIndex.levels.push(parsedLevel);
-          this.catalogIndex.sources[level.metadata.source]++;
-          this.catalogIndex.totalLevels++;
+        // Skip if directory doesn't exist
+        if (!(await fs.pathExists(levelsDir))) {
+          continue;
+        }
+
+        const levelDirectories = await FileUtils.listDirectories(levelsDir);
+
+        for (const levelDir of levelDirectories) {
+          const catalogPath = path.join(levelsDir, levelDir, CATALOG_FILENAMES.LEVEL);
+          const level = await FileUtils.readJSON<Level>(catalogPath);
+
+          if (level) {
+            // Parse dates from strings
+            const parsedLevel = {
+              ...level,
+              metadata: {
+                ...level.metadata,
+                postedDate: new Date(level.metadata.postedDate),
+              },
+              indexed: new Date(level.indexed),
+              lastUpdated: new Date(level.lastUpdated),
+            };
+            this.catalogIndex.levels.push(parsedLevel);
+            this.catalogIndex.sources[level.metadata.source]++;
+            this.catalogIndex.totalLevels++;
+          }
         }
       }
 

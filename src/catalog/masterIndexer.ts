@@ -6,8 +6,10 @@ import { HognoseIndexer } from '../indexers/hognoseIndexer';
 import { DiscordIndexer } from '../indexers/discordIndexer';
 import { logger } from '../utils/logger';
 import { FileUtils } from '../utils/fileUtils';
+import { getAllSourceLevelsDirs } from '../utils/sourceUtils';
 import { IndexerConfig } from '../types';
 import path from 'path';
+import fs from 'fs-extra';
 
 export class MasterIndexer {
   private config: IndexerConfig;
@@ -218,7 +220,13 @@ export class MasterIndexer {
 
   private async setupDirectories(): Promise<void> {
     await FileUtils.ensureDir(this.config.outputDir);
-    await FileUtils.ensureDir(path.join(this.config.outputDir, 'levels'));
+
+    // Create all source-specific level directories
+    const sourceDirs = getAllSourceLevelsDirs();
+    for (const sourceDir of sourceDirs) {
+      await FileUtils.ensureDir(path.join(this.config.outputDir, sourceDir));
+    }
+
     await FileUtils.ensureDir(this.config.tempDir);
   }
 
@@ -261,25 +269,35 @@ export class MasterIndexer {
   }
 
   private async getAllLevels(): Promise<Level[]> {
-    const levelsDir = path.join(this.config.outputDir, 'levels');
-    const levelDirectories = await FileUtils.listDirectories(levelsDir);
     const levels: Level[] = [];
+    const sourceDirs = getAllSourceLevelsDirs();
 
-    for (const levelDir of levelDirectories) {
-      const catalogPath = path.join(levelsDir, levelDir, 'catalog.json');
-      const level = await FileUtils.readJSON<Level>(catalogPath);
-      if (level) {
-        // Parse dates from strings
-        const parsedLevel = {
-          ...level,
-          metadata: {
-            ...level.metadata,
-            postedDate: new Date(level.metadata.postedDate),
-          },
-          indexed: new Date(level.indexed),
-          lastUpdated: new Date(level.lastUpdated),
-        };
-        levels.push(parsedLevel);
+    for (const sourceDir of sourceDirs) {
+      const levelsDir = path.join(this.config.outputDir, sourceDir);
+
+      // Skip if directory doesn't exist
+      if (!(await fs.pathExists(levelsDir))) {
+        continue;
+      }
+
+      const levelDirectories = await FileUtils.listDirectories(levelsDir);
+
+      for (const levelDir of levelDirectories) {
+        const catalogPath = path.join(levelsDir, levelDir, 'catalog.json');
+        const level = await FileUtils.readJSON<Level>(catalogPath);
+        if (level) {
+          // Parse dates from strings
+          const parsedLevel = {
+            ...level,
+            metadata: {
+              ...level.metadata,
+              postedDate: new Date(level.metadata.postedDate),
+            },
+            indexed: new Date(level.indexed),
+            lastUpdated: new Date(level.lastUpdated),
+          };
+          levels.push(parsedLevel);
+        }
       }
     }
 

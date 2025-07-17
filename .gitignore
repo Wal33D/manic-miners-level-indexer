@@ -28,6 +28,9 @@ output/
 temp/
 test-output/
 levels/
+levels-archive/
+levels-discord/
+levels-hognose/
 
 # Consolidated test outputs
 .test-outputs/
