@@ -1,9 +1,9 @@
 # Manic Miners Level Indexer
 
-![CI](https://github.com/Wal33D/manic-miners-level-indexer/workflows/CI/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+[![GitHub](https://img.shields.io/badge/GitHub-Wal33D%2Fmanic--miners--level--indexer-blue)](https://github.com/Wal33D/manic-miners-level-indexer)
 
 A unified indexing system for Manic Miners levels that combines archive scraping, Hognose indexing, map rendering, and catalog management into a single, powerful tool.
 
@@ -58,6 +58,12 @@ npm run test:hognose     # Test Hognose indexer
 npm run test:all         # Test all indexers together
 npm run verify:hognose   # Verify complete Hognose indexing
 ```
+
+## Project Links
+
+- **Repository**: [https://github.com/Wal33D/manic-miners-level-indexer](https://github.com/Wal33D/manic-miners-level-indexer)
+- **Issues**: [https://github.com/Wal33D/manic-miners-level-indexer/issues](https://github.com/Wal33D/manic-miners-level-indexer/issues)
+- **Pull Requests**: [https://github.com/Wal33D/manic-miners-level-indexer/pulls](https://github.com/Wal33D/manic-miners-level-indexer/pulls)
 
 ## Architecture
 
@@ -319,13 +325,117 @@ console.log(`Cleared ${cleared} Hognose levels`);
 
 This ensures your catalog always contains the latest Hognose levels without accumulating outdated versions.
 
+## Git Workflow
+
+### Development Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/Wal33D/manic-miners-level-indexer.git
+   cd manic-miners-level-indexer
+   npm install
+   ```
+
+2. **Create a feature branch**:
+   ```bash
+   git checkout -b feature/your-feature-name
+   # or for bugfixes:
+   git checkout -b fix/your-bugfix-name
+   ```
+
+### Before Committing
+
+Always run these checks before committing:
+
+```bash
+# 1. TypeScript type checking
+npm run type-check
+
+# 2. Lint and fix code issues
+npm run lint
+
+# 3. Format code with Prettier
+npm run format
+
+# 4. Run tests (if applicable)
+npm test
+```
+
+### Commit Guidelines
+
+1. **Write clear commit messages**:
+   ```bash
+   # Good examples:
+   git commit -m "Add Discord channel validation"
+   git commit -m "Fix memory leak in archive indexer"
+   git commit -m "Update TypeScript to 5.0"
+   
+   # Bad examples:
+   git commit -m "Fixed stuff"
+   git commit -m "Updates"
+   ```
+
+2. **Keep commits focused**: One feature/fix per commit
+
+3. **Reference issues when applicable**:
+   ```bash
+   git commit -m "Fix duplicate level detection (#123)"
+   ```
+
+### Pushing Changes
+
+```bash
+# Push your feature branch
+git push origin feature/your-feature-name
+
+# Create a pull request on GitHub
+```
+
+### Keeping Your Fork Updated
+
+```bash
+# Add the upstream remote (only need to do this once)
+git remote add upstream https://github.com/Wal33D/manic-miners-level-indexer.git
+
+# Fetch and merge updates from upstream
+git fetch upstream
+git checkout main
+git merge upstream/main
+git push origin main
+```
+
+### Pull Request Process
+
+1. **Ensure all checks pass** (type-check, lint, format)
+2. **Update documentation** if you've changed APIs
+3. **Add tests** for new features
+4. **Request review** from maintainers
+5. **Address feedback** promptly
+
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+We welcome contributions! Please follow these guidelines:
+
+1. **Fork the repository** and create your branch from `main`
+2. **Follow the coding style** - TypeScript, ESLint, and Prettier configs are provided
+3. **Write tests** for new features when possible
+4. **Update documentation** as needed
+5. **Submit a pull request** with a clear description of changes
+
+### Code Style
+
+- Use TypeScript for all new code
+- Follow the existing code patterns and conventions
+- Keep functions small and focused
+- Add JSDoc comments for public APIs
+- Use meaningful variable and function names
+
+### Testing
+
+- Unit tests go in `src/tests/`
+- Integration tests go in `tests/integration/`
+- Run `npm test` to execute all tests
+- Add tests for bug fixes to prevent regressions
 
 ## License
 
