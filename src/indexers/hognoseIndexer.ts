@@ -380,8 +380,14 @@ export class HognoseIndexer {
         }
         response.body.pipe(fileStream);
         response.body.on('error', reject);
-        fileStream.on('finish', resolve);
-        fileStream.on('error', reject);
+        fileStream.on('finish', () => {
+          fileStream.close();
+          resolve();
+        });
+        fileStream.on('error', error => {
+          fileStream.close();
+          reject(error);
+        });
       });
     }
   }
