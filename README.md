@@ -1,6 +1,6 @@
 # Manic Miners Level Indexer
 
-![CI](https://github.com/Aquataze/manic-miners-level-indexer/workflows/CI/badge.svg)
+![CI](https://github.com/Wal33D/manic-miners-level-indexer/workflows/CI/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
@@ -29,9 +29,9 @@ npm run build
 
 ### Configuration
 
-1. Copy the example configuration:
+1. Create a configuration file:
 ```bash
-cp config.production.example.json config.json
+# Create config.json based on the template below
 ```
 
 2. Edit `config.json` to customize your settings:
@@ -53,9 +53,10 @@ npm run index:discord    # Run Discord indexer
 npm run index:hognose    # Run Hognose indexer
 
 # Test scripts for individual indexers
-npm run test:archive     # Test archive indexer
 npm run test:discord     # Test Discord indexer
 npm run test:hognose     # Test Hognose indexer
+npm run test:all         # Test all indexers together
+npm run verify:hognose   # Verify complete Hognose indexing
 ```
 
 ## Architecture
@@ -99,7 +100,7 @@ The system uses a JSON configuration file with the following structure:
     },
     "hognose": {
       "enabled": true,
-      "githubRepo": "ManicMiners/hognose",
+      "githubRepo": "charredUtensil/hognose",
       "checkInterval": 86400000
     }
   },
@@ -162,9 +163,10 @@ npm start
 ### Testing Scripts
 
 - `npm run test` - Run unit tests
-- `npm run test:archive` - Test archive indexer
-- `npm run test:discord` - Test Discord indexer
-- `npm run test:hognose` - Test Hognose indexer
+- `npm run test:discord` - Test Discord indexer integration
+- `npm run test:hognose` - Test Hognose indexer integration
+- `npm run test:all` - Test all indexers together
+- `npm run verify:hognose` - Verify complete Hognose indexing (all 256 levels)
 
 ### Development Scripts
 
@@ -189,6 +191,16 @@ output/
 ├── master_index.json
 ├── discord_processed.json
 └── hognose_processed.json
+
+test-output/              # Test directory structure
+├── temp/                 # Temporary test files
+│   ├── config-tests/
+│   └── file-utils-tests/
+└── integration/          # Integration test outputs
+    ├── all-indexers/
+    ├── discord/
+    ├── hognose/
+    └── hognose-verification/
 ```
 
 ## Catalog System
