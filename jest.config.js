@@ -18,7 +18,7 @@ module.exports = {
   testTimeout: 30000,
   maxWorkers: 4,
   moduleNameMapper: {
-    '^chalk$': '<rootDir>/node_modules/chalk/index.cjs',
+    '^chalk$': '<rootDir>/node_modules/chalk/source/index.js',
   },
   transformIgnorePatterns: [
     'node_modules/(?!(chalk)/)'
