@@ -99,6 +99,7 @@ coverage/
 
 # Test output and screenshots
 test-output/
+hognose-verification-output/
 *.png
 *.jpg
 *.jpeg

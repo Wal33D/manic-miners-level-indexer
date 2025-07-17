@@ -29,7 +29,7 @@
   "include": [
     "src/**/*",
     "scripts/**/*",
-    "test-*.ts"
+    "tests/**/*"
   ],
   "exclude": [
     "node_modules",

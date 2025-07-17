@@ -144,16 +144,18 @@ export class CatalogManager {
       const levelsToRemove = this.catalogIndex.levels.filter(
         level => level.metadata.source === source
       );
-      
+
       let removedCount = 0;
-      
+
       for (const level of levelsToRemove) {
         try {
           // Remove level directory
           await FileUtils.deleteFile(level.catalogPath);
-          
+
           // Remove from index
-          const index = this.catalogIndex.levels.findIndex(l => l.metadata.id === level.metadata.id);
+          const index = this.catalogIndex.levels.findIndex(
+            l => l.metadata.id === level.metadata.id
+          );
           if (index !== -1) {
             this.catalogIndex.levels.splice(index, 1);
             this.catalogIndex.sources[source]--;
@@ -164,10 +166,10 @@ export class CatalogManager {
           logger.error(`Failed to remove level ${level.metadata.id}:`, error);
         }
       }
-      
+
       this.catalogIndex.lastUpdated = new Date();
       await this.saveCatalogIndex();
-      
+
       logger.info(`Cleared ${removedCount} ${source} levels from catalog`);
       return removedCount;
     } catch (error) {
