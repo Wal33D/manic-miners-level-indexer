@@ -1,6 +1,6 @@
-import { MasterIndexer } from './catalog/masterIndexer';
-import { IndexerConfig, MapSource } from './types';
-import { logger } from './utils/logger';
+import { MasterIndexer } from '../src/catalog/masterIndexer';
+import { IndexerConfig } from '../src/types';
+import { logger } from '../src/utils/logger';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -23,45 +23,15 @@ async function loadConfig(): Promise<IndexerConfig> {
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const sourceArg = args.find(arg => arg.startsWith('--source'));
-  let source = null;
-
-  if (sourceArg) {
-    // Handle both --source=archive and --source archive formats
-    if (sourceArg.includes('=')) {
-      source = sourceArg.split('=')[1];
-    } else {
-      const sourceIndex = args.indexOf(sourceArg);
-      if (sourceIndex < args.length - 1) {
-        source = args[sourceIndex + 1];
-      }
-    }
-  }
-
-  logger.info('Manic Miners Level Indexer');
-  logger.info('=========================');
+  logger.info('Manic Miners Level Indexer - Index All Sources');
+  logger.info('=============================================');
 
   const config = await loadConfig();
   const masterIndexer = new MasterIndexer(config);
 
   try {
-    if (source) {
-      // Index specific source
-      const validSources = Object.values(MapSource);
-      if (!validSources.includes(source as MapSource)) {
-        logger.error(`Invalid source: ${source}`);
-        logger.info(`Valid sources: ${validSources.join(', ')}`);
-        process.exit(1);
-      }
-
-      logger.info(`Indexing from source: ${source}`);
-      await masterIndexer.indexSource(source as MapSource);
-    } else {
-      // Index all sources
-      logger.info('Indexing from all enabled sources...');
-      await masterIndexer.indexAll();
-    }
+    logger.info('Indexing from all enabled sources...');
+    await masterIndexer.indexAll();
 
     // Show final stats
     const stats = await masterIndexer.getCatalogStats();
@@ -85,5 +55,5 @@ process.on('unhandledRejection', error => {
   process.exit(1);
 });
 
-// Run the CLI
+// Run the script
 main();
