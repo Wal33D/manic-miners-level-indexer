@@ -7,33 +7,33 @@ import { getAllSourceLevelsDirs } from '../src/utils/sourceUtils';
 
 async function showOutputStructure() {
   const outputDir = './output';
-  
+
   logger.info('Current Output Directory Structure:');
   logger.info('==================================');
-  
+
   // Check if output directory exists
   if (!(await fs.pathExists(outputDir))) {
     logger.warn('Output directory does not exist yet');
     return;
   }
-  
+
   // Show source-specific directories
   const sourceDirs = getAllSourceLevelsDirs();
-  
+
   for (const sourceDir of sourceDirs) {
     const dirPath = path.join(outputDir, sourceDir);
-    
+
     if (await fs.pathExists(dirPath)) {
       const entries = await fs.readdir(dirPath);
-      const levelCount = entries.filter(async (entry) => {
+      const levelCount = entries.filter(async entry => {
         const entryPath = path.join(dirPath, entry);
         const stat = await fs.stat(entryPath);
         return stat.isDirectory();
       }).length;
-      
+
       logger.info(`📁 ${sourceDir}/`);
       logger.info(`   └── ${levelCount} levels`);
-      
+
       // Check for catalog file
       const catalogPath = path.join(dirPath, `catalog-${sourceDir.replace('levels-', '')}.json`);
       if (await fs.pathExists(catalogPath)) {
@@ -43,13 +43,13 @@ async function showOutputStructure() {
       logger.info(`📁 ${sourceDir}/ (not created yet)`);
     }
   }
-  
+
   // Check for master catalog
   const masterCatalogPath = path.join(outputDir, 'catalog_index.json');
   if (await fs.pathExists(masterCatalogPath)) {
     logger.info('\n📄 Master catalog exists');
   }
-  
+
   const masterIndexPath = path.join(outputDir, 'master_index.json');
   if (await fs.pathExists(masterIndexPath)) {
     logger.info('📄 Master index exists');

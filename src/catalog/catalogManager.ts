@@ -1,7 +1,7 @@
 import { Level, CatalogIndex, MapSource } from '../types';
 import { logger } from '../utils/logger';
 import { FileUtils } from '../utils/fileUtils';
-import { getAllSourceLevelsDirs } from '../utils/sourceUtils';
+import { getAllSourceLevelsDirs, getSourceLevelsDir } from '../utils/sourceUtils';
 import { CATALOG_FILENAMES } from '../config/default';
 import path from 'path';
 import fs from 'fs-extra';
@@ -67,7 +67,7 @@ export class CatalogManager {
 
       // Load source-specific catalogs
       for (const source of Object.values(MapSource)) {
-        const sourceDir = this.getSourceLevelsDir(source);
+        const sourceDir = getSourceLevelsDir(source);
         const sourceIndexPath = path.join(this.outputDir, sourceDir, CATALOG_FILENAMES.INDEX);
         const sourceIndex = await FileUtils.readJSON<CatalogIndex>(sourceIndexPath);
 
@@ -103,7 +103,7 @@ export class CatalogManager {
 
       // Save source-specific catalog indexes
       for (const [source, catalog] of this.sourceCatalogs.entries()) {
-        const sourceDir = this.getSourceLevelsDir(source);
+        const sourceDir = getSourceLevelsDir(source);
         const sourcePath = path.join(this.outputDir, sourceDir);
         await FileUtils.ensureDir(sourcePath);
         const sourceIndexPath = path.join(sourcePath, CATALOG_FILENAMES.INDEX);
@@ -233,7 +233,7 @@ export class CatalogManager {
           // Remove level directory
           await FileUtils.deleteFile(level.catalogPath);
 
-          // Remove from index
+          // Remove from main index
           const index = this.catalogIndex.levels.findIndex(
             l => l.metadata.id === level.metadata.id
           );
@@ -246,6 +246,15 @@ export class CatalogManager {
         } catch (error) {
           logger.error(`Failed to remove level ${level.metadata.id}:`, error);
         }
+      }
+
+      // Clear source catalog
+      const sourceCatalog = this.sourceCatalogs.get(source);
+      if (sourceCatalog) {
+        sourceCatalog.levels = [];
+        sourceCatalog.totalLevels = 0;
+        sourceCatalog.sources[source] = 0;
+        sourceCatalog.lastUpdated = new Date();
       }
 
       this.catalogIndex.lastUpdated = new Date();
@@ -263,7 +272,7 @@ export class CatalogManager {
     try {
       logger.info('Rebuilding catalog index from level directories...');
 
-      // Reset index
+      // Reset indexes
       this.catalogIndex = {
         totalLevels: 0,
         sources: {
@@ -274,6 +283,20 @@ export class CatalogManager {
         lastUpdated: new Date(),
         levels: [],
       };
+
+      // Reset source catalogs
+      for (const source of Object.values(MapSource)) {
+        this.sourceCatalogs.set(source, {
+          totalLevels: 0,
+          sources: {
+            [MapSource.ARCHIVE]: 0,
+            [MapSource.DISCORD]: 0,
+            [MapSource.HOGNOSE]: 0,
+          },
+          lastUpdated: new Date(),
+          levels: [],
+        });
+      }
 
       // Scan all source level directories
       const sourceDirs = getAllSourceLevelsDirs();
@@ -303,9 +326,19 @@ export class CatalogManager {
               indexed: new Date(level.indexed),
               lastUpdated: new Date(level.lastUpdated),
             };
+
+            // Add to main catalog
             this.catalogIndex.levels.push(parsedLevel);
             this.catalogIndex.sources[level.metadata.source]++;
             this.catalogIndex.totalLevels++;
+
+            // Add to source catalog
+            const sourceCatalog = this.sourceCatalogs.get(level.metadata.source);
+            if (sourceCatalog) {
+              sourceCatalog.levels.push(parsedLevel);
+              sourceCatalog.sources[level.metadata.source]++;
+              sourceCatalog.totalLevels++;
+            }
           }
         }
       }
@@ -453,16 +486,4 @@ export class CatalogManager {
     return duplicates;
   }
 
-  private getSourceLevelsDir(source: MapSource): string {
-    switch (source) {
-      case MapSource.ARCHIVE:
-        return 'levels-archive';
-      case MapSource.DISCORD:
-        return 'levels-discord';
-      case MapSource.HOGNOSE:
-        return 'levels-hognose';
-      default:
-        throw new Error(`Unknown source: ${source}`);
-    }
-  }
 }
