@@ -23,21 +23,23 @@ async function loadConfig(): Promise<IndexerConfig> {
 }
 
 async function main() {
-  logger.info('Manic Miners Level Indexer - Archive Source');
-  logger.info('==========================================');
+  logger.header('Manic Miners Level Indexer - Archive Source');
 
   const config = await loadConfig();
   const masterIndexer = new MasterIndexer(config);
 
   try {
-    logger.info('Indexing from Archive source...');
+    logger.section('Starting Archive.org indexing');
     await masterIndexer.indexSource(MapSource.ARCHIVE);
 
     // Show final stats
     const stats = await masterIndexer.getCatalogStats();
-    logger.info('\n=== Final Statistics ===');
-    logger.info(`Total levels: ${stats.totalLevels}`);
-    logger.info(`Archive levels: ${stats.sources[MapSource.ARCHIVE] || 0}`);
+    logger.section('Final Statistics');
+    logger.stats({
+      'Total levels': stats.totalLevels,
+      'Archive levels': stats.sources[MapSource.ARCHIVE] || 0,
+      'Last updated': new Date(stats.lastUpdated).toLocaleString(),
+    });
 
     logger.success('\nArchive indexing completed successfully!');
     process.exit(0);

@@ -23,21 +23,23 @@ async function loadConfig(): Promise<IndexerConfig> {
 }
 
 async function main() {
-  logger.info('Manic Miners Level Indexer - Hognose Source');
-  logger.info('==========================================');
+  logger.header('Manic Miners Level Indexer - Hognose Source');
 
   const config = await loadConfig();
   const masterIndexer = new MasterIndexer(config);
 
   try {
-    logger.info('Indexing from Hognose source...');
+    logger.section('Starting Hognose indexing');
     await masterIndexer.indexSource(MapSource.HOGNOSE);
 
     // Show final stats
     const stats = await masterIndexer.getCatalogStats();
-    logger.info('\n=== Final Statistics ===');
-    logger.info(`Total levels: ${stats.totalLevels}`);
-    logger.info(`Hognose levels: ${stats.sources[MapSource.HOGNOSE] || 0}`);
+    logger.section('Final Statistics');
+    logger.stats({
+      'Total levels': stats.totalLevels,
+      'Hognose levels': stats.sources[MapSource.HOGNOSE] || 0,
+      'Last updated': new Date(stats.lastUpdated).toLocaleString(),
+    });
 
     logger.success('\nHognose indexing completed successfully!');
     process.exit(0);

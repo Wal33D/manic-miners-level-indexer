@@ -53,18 +53,18 @@ export class HognoseIndexer {
     const errors: string[] = [];
 
     try {
-      logger.info('Starting Hognose indexing...');
+      logger.section('Initializing Hognose indexer');
 
       // If replaceExisting is true, clear all existing Hognose levels
       if (options?.replaceExisting) {
-        logger.info('Clearing existing Hognose levels...');
+        logger.item('Clearing existing Hognose levels...');
         const { CatalogManager } = await import('../catalog/catalogManager');
         const catalogManager = new CatalogManager(this.outputDir);
         await catalogManager.loadCatalogIndex();
 
         const clearedCount = await catalogManager.clearLevelsBySource(MapSource.HOGNOSE);
         if (clearedCount > 0) {
-          logger.info(`Cleared ${clearedCount} existing Hognose levels`);
+          logger.success(`Cleared ${clearedCount} existing Hognose levels`);
         }
 
         // Also clear the processed releases tracking
@@ -119,7 +119,7 @@ export class HognoseIndexer {
           : releases;
 
       if (options?.latestOnly !== false && releases.length > 1) {
-        logger.info(
+        logger.item(
           `Found ${releases.length} releases, processing only the latest: ${releases[0].tag_name}`
         );
       }
@@ -146,7 +146,7 @@ export class HognoseIndexer {
           for (const level of levels) {
             await this.saveLevelData(level);
             levelsProcessed++;
-            logger.info(`Processed Hognose level: ${level.metadata.title}`);
+            logger.item(`${level.metadata.title}`, '✔');
           }
 
           this.processedReleases.add(release.tag_name);
