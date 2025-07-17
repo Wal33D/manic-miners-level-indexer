@@ -1,5 +1,7 @@
 # Manic Miners Level Indexer
 
+[![CI](https://github.com/Wal33D/manic-miners-level-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/Wal33D/manic-miners-level-indexer/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/Wal33D/manic-miners-level-indexer/actions/workflows/code-quality.yml/badge.svg)](https://github.com/Wal33D/manic-miners-level-indexer/actions/workflows/code-quality.yml)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
@@ -29,9 +31,9 @@ npm run build
 
 ### Configuration
 
-1. Create a configuration file:
+1. Copy the example configuration:
 ```bash
-# Create config.json based on the template below
+cp config.template.json config.json
 ```
 
 2. Edit `config.json` to customize your settings:

@@ -1,0 +1,61 @@
+name: Code Quality
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Check for dependency vulnerabilities
+      run: npm audit --audit-level=moderate
+      continue-on-error: true
+    
+    - name: Check bundle size
+      run: |
+        npm run build
+        echo "### Build Size Report" >> $GITHUB_STEP_SUMMARY
+        echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+        find dist -name "*.js" -exec bash -c 'echo "| {} | $(du -h {} | cut -f1) |"' \; >> $GITHUB_STEP_SUMMARY
+    
+    - name: TypeScript coverage report
+      run: |
+        echo "### TypeScript Coverage" >> $GITHUB_STEP_SUMMARY
+        echo "Checking for any TypeScript errors..." >> $GITHUB_STEP_SUMMARY
+        npm run type-check 2>&1 | tee type-check-output.txt || true
+        if [ -s type-check-output.txt ]; then
+          echo "❌ TypeScript errors found" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat type-check-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ No TypeScript errors" >> $GITHUB_STEP_SUMMARY
+        fi
+    
+    - name: ESLint report
+      run: |
+        echo "### ESLint Report" >> $GITHUB_STEP_SUMMARY
+        npm run lint:check -- --format json --output-file eslint-report.json || true
+        if [ -f eslint-report.json ]; then
+          ERROR_COUNT=$(jq '[.[] | .errorCount] | add' eslint-report.json)
+          WARN_COUNT=$(jq '[.[] | .warningCount] | add' eslint-report.json)
+          echo "- Errors: $ERROR_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- Warnings: $WARN_COUNT" >> $GITHUB_STEP_SUMMARY
+        fi
