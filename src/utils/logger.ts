@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import * as readline from 'readline';
 
 export enum LogLevel {
   DEBUG = 0,
@@ -7,9 +8,18 @@ export enum LogLevel {
   ERROR = 3,
 }
 
+interface ProgressState {
+  message: string;
+  current: number;
+  total: number;
+  startTime: number;
+}
+
 export class Logger {
   private static instance: Logger;
   private logLevel: LogLevel = LogLevel.INFO;
+  private progressState: ProgressState | null = null;
+  private lastProgressLine = '';
 
   private constructor() {}
 
@@ -24,39 +34,127 @@ export class Logger {
     this.logLevel = level;
   }
 
+  private clearProgressLine(): void {
+    if (this.lastProgressLine) {
+      readline.clearLine(process.stdout, 0);
+      readline.cursorTo(process.stdout, 0);
+      this.lastProgressLine = '';
+    }
+  }
+
   debug(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.DEBUG) {
-      console.log(chalk.gray(`[DEBUG] ${message}`), ...args);
+      this.clearProgressLine();
+      console.log(chalk.gray(`${chalk.dim('●')} ${message}`), ...args);
     }
   }
 
   info(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.INFO) {
-      console.log(chalk.blue(`[INFO]  ${message}`), ...args);
+      this.clearProgressLine();
+      console.log(chalk.blue('ℹ') + ' ' + message, ...args);
     }
   }
 
   warn(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.WARN) {
-      console.log(chalk.yellow(`[WARN]  ${message}`), ...args);
+      this.clearProgressLine();
+      console.log(chalk.yellow('⚠') + ' ' + chalk.yellow(message), ...args);
     }
   }
 
   error(message: string, ...args: unknown[]): void {
     if (this.logLevel <= LogLevel.ERROR) {
-      console.log(chalk.red(`[ERROR] ${message}`), ...args);
+      this.clearProgressLine();
+      console.log(chalk.red('✖') + ' ' + chalk.red(message), ...args);
     }
   }
 
   success(message: string, ...args: unknown[]): void {
-    console.log(chalk.green(`[SUCCESS] ${message}`), ...args);
+    this.clearProgressLine();
+    console.log(chalk.green('✔') + ' ' + chalk.green(message), ...args);
   }
 
   progress(message: string, current: number, total: number): void {
-    const percentage = Math.round((current / total) * 100);
-    const bar = '='.repeat(Math.floor(percentage / 5));
-    const empty = ' '.repeat(20 - bar.length);
-    console.log(chalk.cyan(`[${bar}${empty}] ${percentage}% ${message}`));
+    if (!this.progressState || this.progressState.message !== message) {
+      this.progressState = {
+        message,
+        current,
+        total,
+        startTime: Date.now(),
+      };
+    } else {
+      this.progressState.current = current;
+      this.progressState.total = total;
+    }
+
+    const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+    const barLength = 30;
+    const filledLength = Math.floor((percentage / 100) * barLength);
+    const bar = '█'.repeat(filledLength) + '░'.repeat(barLength - filledLength);
+    
+    // Calculate ETA
+    const elapsed = Date.now() - this.progressState.startTime;
+    const rate = current > 0 ? current / (elapsed / 1000) : 0;
+    const remaining = total - current;
+    const eta = rate > 0 ? remaining / rate : 0;
+    const etaStr = eta > 0 ? ` • ETA: ${this.formatTime(eta)}` : '';
+
+    // Clear previous line and write new progress
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
+    
+    const progressLine = `${chalk.cyan(bar)} ${chalk.bold(`${percentage}%`)} ${chalk.dim(`(${current}/${total})`)} ${message}${etaStr}`;
+    process.stdout.write(progressLine);
+    this.lastProgressLine = progressLine;
+
+    // If complete, add a newline
+    if (current >= total) {
+      console.log(); // New line after completion
+      this.lastProgressLine = '';
+      this.progressState = null;
+    }
+  }
+
+  private formatTime(seconds: number): string {
+    if (seconds < 60) {
+      return `${Math.round(seconds)}s`;
+    } else if (seconds < 3600) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.round(seconds % 60);
+      return `${mins}m ${secs}s`;
+    } else {
+      const hours = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      return `${hours}h ${mins}m`;
+    }
+  }
+
+  header(title: string, char = '='): void {
+    this.clearProgressLine();
+    const separator = char.repeat(title.length);
+    console.log(chalk.bold.cyan(`\n${title}`));
+    console.log(chalk.dim(separator));
+  }
+
+  section(title: string): void {
+    this.clearProgressLine();
+    console.log(chalk.bold(`\n▶ ${title}`));
+  }
+
+  item(message: string, icon = '•'): void {
+    this.clearProgressLine();
+    console.log(`  ${chalk.dim(icon)} ${message}`);
+  }
+
+  stats(stats: Record<string, number | string>): void {
+    this.clearProgressLine();
+    console.log();
+    const maxKeyLength = Math.max(...Object.keys(stats).map(k => k.length));
+    for (const [key, value] of Object.entries(stats)) {
+      const paddedKey = key.padEnd(maxKeyLength);
+      console.log(`  ${chalk.dim(paddedKey)} : ${chalk.bold(value)}`);
+    }
   }
 }
 
