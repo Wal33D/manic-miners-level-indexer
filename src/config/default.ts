@@ -23,7 +23,6 @@ export const defaultConfig: IndexerConfig = {
       enabled: true,
       githubRepo: 'charredUtensil/groundhog',
       checkInterval: 24 * 60 * 60 * 1000, // 24 hours
-      numberOfLevels: 50, // Number of levels to generate
     },
   },
   rendering: {

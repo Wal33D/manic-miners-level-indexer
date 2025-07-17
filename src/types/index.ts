@@ -83,7 +83,6 @@ export interface IndexerConfig {
       enabled: boolean;
       githubRepo?: string;
       checkInterval?: number;
-      numberOfLevels?: number;
     };
   };
   rendering: {

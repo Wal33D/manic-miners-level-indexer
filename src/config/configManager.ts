@@ -134,10 +134,6 @@ export class ConfigManager {
     this.config.sources.hognose.checkInterval = interval;
   }
 
-  setHognoseNumberOfLevels(numberOfLevels: number): void {
-    this.config.sources.hognose.numberOfLevels = numberOfLevels;
-  }
-
   // Validation
   validateConfig(): { valid: boolean; errors: string[] } {
     const errors: string[] = [];

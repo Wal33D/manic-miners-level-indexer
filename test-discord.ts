@@ -75,6 +75,15 @@ async function testDiscordIndexer() {
       }
     }
   }
+  
+  // Rebuild catalog index to make levels accessible via CatalogManager
+  logger.info('\nRebuilding catalog index...');
+  const { CatalogManager } = await import('./src/catalog/catalogManager');
+  const catalogManager = new CatalogManager(outputDir);
+  await catalogManager.rebuildCatalogIndex();
+  
+  const allLevels = await catalogManager.getAllLevels();
+  logger.info(`Total levels in catalog: ${allLevels.length}`);
 }
 
 // Run the test

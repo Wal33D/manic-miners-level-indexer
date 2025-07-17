@@ -40,7 +40,11 @@ export class HognoseIndexer {
   }
 
   async indexHognose(
-    progressCallback?: (progress: IndexerProgress) => void
+    progressCallback?: (progress: IndexerProgress) => void,
+    options?: { 
+      latestOnly?: boolean;
+      replaceExisting?: boolean; // Clear old Hognose levels before indexing new ones
+    }
   ): Promise<IndexerResult> {
     const startTime = Date.now();
     let levelsProcessed = 0;
@@ -49,6 +53,23 @@ export class HognoseIndexer {
 
     try {
       logger.info('Starting Hognose indexing...');
+      
+      // If replaceExisting is true, clear all existing Hognose levels
+      if (options?.replaceExisting) {
+        logger.info('Clearing existing Hognose levels...');
+        const { CatalogManager } = await import('../catalog/catalogManager');
+        const catalogManager = new CatalogManager(this.outputDir);
+        await catalogManager.loadCatalogIndex();
+        
+        const clearedCount = await catalogManager.clearLevelsBySource(MapSource.HOGNOSE);
+        if (clearedCount > 0) {
+          logger.info(`Cleared ${clearedCount} existing Hognose levels`);
+        }
+        
+        // Also clear the processed releases tracking
+        this.processedReleases.clear();
+        await this.saveProcessedReleases();
+      }
 
       progressCallback?.({
         phase: 'scraping',
@@ -58,21 +79,59 @@ export class HognoseIndexer {
         message: 'Fetching Hognose releases...',
       });
 
-      // Load previously processed releases
-      await this.loadProcessedReleases();
+      // Load previously processed releases (if not replacing)
+      if (!options?.replaceExisting) {
+        await this.loadProcessedReleases();
+      }
 
       const releases = await this.fetchHognoseReleases();
+      
+      // Check if we have a new release
+      let hasNewRelease = false;
+      if (releases.length > 0 && this.processedReleases.size > 0) {
+        const latestRelease = releases[0].tag_name;
+        if (!this.processedReleases.has(latestRelease)) {
+          hasNewRelease = true;
+          logger.info(`New Hognose release detected: ${latestRelease}`);
+          
+          // If we have a new release and replaceExisting is not explicitly false, clear old levels
+          if (options?.replaceExisting !== false) {
+            logger.info('Clearing old Hognose levels for new release...');
+            const { CatalogManager } = await import('../catalog/catalogManager');
+            const catalogManager = new CatalogManager(this.outputDir);
+            await catalogManager.loadCatalogIndex();
+            
+            const clearedCount = await catalogManager.clearLevelsBySource(MapSource.HOGNOSE);
+            if (clearedCount > 0) {
+              logger.info(`Cleared ${clearedCount} old Hognose levels`);
+            }
+            
+            // Clear processed releases to reprocess the new one
+            this.processedReleases.clear();
+            await this.saveProcessedReleases();
+          }
+        }
+      }
+      
+      // By default, only process the latest release
+      const releasesToProcess = options?.latestOnly !== false && releases.length > 0 
+        ? [releases[0]] // GitHub API returns releases in descending order (newest first)
+        : releases;
+      
+      if (options?.latestOnly !== false && releases.length > 1) {
+        logger.info(`Found ${releases.length} releases, processing only the latest: ${releases[0].tag_name}`);
+      }
 
       progressCallback?.({
         phase: 'downloading',
         source: MapSource.HOGNOSE,
         current: 0,
-        total: releases.length,
+        total: releasesToProcess.length,
         message: 'Processing Hognose releases...',
       });
 
-      for (let i = 0; i < releases.length; i++) {
-        const release = releases[i];
+      for (let i = 0; i < releasesToProcess.length; i++) {
+        const release = releasesToProcess[i];
 
         try {
           if (this.processedReleases.has(release.tag_name)) {
@@ -101,7 +160,7 @@ export class HognoseIndexer {
           phase: 'downloading',
           source: MapSource.HOGNOSE,
           current: i + 1,
-          total: releases.length,
+          total: releasesToProcess.length,
           message: `Processing release ${release.name}...`,
         });
       }
