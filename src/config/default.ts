@@ -9,7 +9,6 @@ export const defaultConfig: IndexerConfig = {
     archive: {
       enabled: true,
       baseUrl: 'https://archive.org/advancedsearch.php',
-      maxPages: 10,
     },
     discord: {
       enabled: true,
@@ -17,7 +16,6 @@ export const defaultConfig: IndexerConfig = {
         'https://discord.com/channels/288873207503347712/288873207503347712',
         'https://discord.com/channels/288873207503347712/574327631175901201',
       ],
-      maxPages: 50,
     },
     hognose: {
       enabled: true,

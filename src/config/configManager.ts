@@ -96,10 +96,6 @@ export class ConfigManager {
   }
 
   // Archive configuration
-  setArchiveMaxPages(maxPages: number): void {
-    this.config.sources.archive.maxPages = maxPages;
-  }
-
   setArchiveBaseUrl(baseUrl: string): void {
     this.config.sources.archive.baseUrl = baseUrl;
   }
@@ -119,10 +115,6 @@ export class ConfigManager {
     this.config.sources.discord.channels = this.config.sources.discord.channels.filter(
       c => c !== channel
     );
-  }
-
-  setDiscordMaxPages(maxPages: number): void {
-    this.config.sources.discord.maxPages = maxPages;
   }
 
   // Hognose configuration
@@ -153,9 +145,6 @@ export class ConfigManager {
       if (!this.config.sources.archive.baseUrl) {
         errors.push('Archive base URL is required when archive source is enabled');
       }
-      if (!this.config.sources.archive.maxPages || this.config.sources.archive.maxPages < 1) {
-        errors.push('Archive max pages must be greater than 0');
-      }
     }
 
     // Validate Discord source
@@ -165,9 +154,6 @@ export class ConfigManager {
         this.config.sources.discord.channels.length === 0
       ) {
         errors.push('Discord channels are required when Discord source is enabled');
-      }
-      if (!this.config.sources.discord.maxPages || this.config.sources.discord.maxPages < 1) {
-        errors.push('Discord max pages must be greater than 0');
       }
     }
 
@@ -265,12 +251,10 @@ export class ConfigManager {
           archive: {
             enabled: 'Enable Internet Archive indexing',
             baseUrl: 'Base URL for Internet Archive API',
-            maxPages: 'Maximum number of pages to scrape from archive',
           },
           discord: {
             enabled: 'Enable Discord channel indexing',
             channels: 'List of Discord channel URLs to scrape',
-            maxPages: 'Maximum number of pages to scrape per channel',
           },
           hognose: {
             enabled: 'Enable Hognose GitHub releases indexing',

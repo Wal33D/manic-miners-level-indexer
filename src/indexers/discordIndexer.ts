@@ -23,15 +23,13 @@ interface ForumPost {
 
 export class DiscordIndexer {
   private channels: string[];
-  private maxPages: number;
   private outputDir: string;
   private processedMessages: Set<string> = new Set();
   private browser?: Browser;
   private page?: Page;
 
-  constructor(channels: string[], maxPages: number, outputDir: string) {
+  constructor(channels: string[], outputDir: string) {
     this.channels = channels;
-    this.maxPages = maxPages;
     this.outputDir = outputDir;
   }
 

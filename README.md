@@ -90,13 +90,11 @@ The system uses a JSON configuration file with the following structure:
   "sources": {
     "archive": {
       "enabled": true,
-      "baseUrl": "https://archive.org/advancedsearch.php",
-      "maxPages": 10
+      "baseUrl": "https://archive.org/advancedsearch.php"
     },
     "discord": {
       "enabled": true,
-      "channels": ["https://discord.com/channels/..."],
-      "maxPages": 50
+      "channels": ["https://discord.com/channels/..."]
     },
     "hognose": {
       "enabled": true,

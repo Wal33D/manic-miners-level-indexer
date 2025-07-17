@@ -85,8 +85,8 @@ describe('ConfigManager', () => {
     });
 
     it('should update source config', () => {
-      configManager.updateSourceConfig('archive', { maxPages: 20 });
-      expect(configManager.getConfig().sources.archive.maxPages).toBe(20);
+      configManager.updateSourceConfig('archive', { baseUrl: 'https://example.com' });
+      expect(configManager.getConfig().sources.archive.baseUrl).toBe('https://example.com');
     });
 
     it('should manage Discord channels', () => {

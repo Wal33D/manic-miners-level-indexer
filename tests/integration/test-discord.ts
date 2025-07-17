@@ -15,11 +15,7 @@ async function testDiscordIndexer() {
   logger.info('Output directory:', outputDir);
   logger.info('Channels to index:', channels);
 
-  const indexer = new DiscordIndexer(
-    channels,
-    999, // Get all available messages
-    outputDir
-  );
+  const indexer = new DiscordIndexer(channels, outputDir);
 
   const startTime = Date.now();
 

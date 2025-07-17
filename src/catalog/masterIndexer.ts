@@ -36,11 +36,7 @@ export class MasterIndexer {
     }
 
     if (config.sources.discord.enabled) {
-      this.discordIndexer = new DiscordIndexer(
-        config.sources.discord.channels,
-        999, // Unlimited - index all messages
-        config.outputDir
-      );
+      this.discordIndexer = new DiscordIndexer(config.sources.discord.channels, config.outputDir);
     }
   }
 

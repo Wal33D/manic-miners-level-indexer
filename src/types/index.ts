@@ -57,7 +57,6 @@ export interface IndexerConfig {
     archive: {
       enabled: boolean;
       baseUrl: string;
-      maxPages?: number;
       concurrentDownloads?: number;
       searchQueries?: string[];
       dateRange?: {
@@ -77,7 +76,6 @@ export interface IndexerConfig {
     discord: {
       enabled: boolean;
       channels: string[];
-      maxPages?: number;
     };
     hognose: {
       enabled: boolean;
