@@ -26,8 +26,12 @@ async function testHognoseQuick() {
   let levelsProcessed = 0;
 
   // Monkey patch to limit levels
-  const originalProcessLevel = (indexer as any).processLevel;
-  (indexer as any).processLevel = async function (...args: any[]) {
+  type ProcessLevelFn = (...args: unknown[]) => Promise<unknown>;
+  const originalProcessLevel = (indexer as unknown as { processLevel: ProcessLevelFn })
+    .processLevel;
+  (indexer as unknown as { processLevel: ProcessLevelFn }).processLevel = async function (
+    ...args: unknown[]
+  ) {
     if (levelsProcessed >= MAX_LEVELS) {
       logger.info(`Skipping level (reached limit of ${MAX_LEVELS})`);
       return;

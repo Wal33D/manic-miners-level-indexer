@@ -1,7 +1,7 @@
 import { MasterIndexer } from '../../src/catalog/masterIndexer';
 import { IndexerConfig, MapSource } from '../../src/types';
 import { logger } from '../../src/utils/logger';
-import { OutputValidator } from '../../src/tests/outputValidator';
+import { OutputValidator, ValidationResult } from '../../src/tests/outputValidator';
 import { AnalysisReporter } from '../../src/tests/analysisReporter';
 import fs from 'fs-extra';
 import path from 'path';
@@ -79,7 +79,7 @@ async function testOutputAnalysis() {
     // === Phase 2: Validate all output ===
     logger.info('\n\n🔍 Phase 2: Validating output...\n');
     const validator = new OutputValidator();
-    const validationResults: any[] = [];
+    const validationResults: ValidationResult[] = [];
 
     for (const source of Object.values(MapSource)) {
       logger.info(`Validating ${source} levels...`);
@@ -181,7 +181,7 @@ async function testOutputAnalysis() {
     });
 
     // Generate source comparison
-    const comparison = generateSourceComparison(report);
+    const comparison = generateSourceComparison(report as any);
     await fs.writeFile(path.join(reportsDir, 'source-comparison.txt'), comparison);
 
     logger.info(`✅ Reports generated:`);
@@ -213,6 +213,7 @@ async function testOutputAnalysis() {
 /**
  * Patch indexers to limit the amount of data processed for quick testing
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function patchIndexersForQuickTest(masterIndexer: any) {
   const MAX_ARCHIVE_ITEMS = 20;
   const MAX_DISCORD_PER_CHANNEL = 10;
@@ -223,7 +224,7 @@ async function patchIndexersForQuickTest(masterIndexer: any) {
     let archiveCount = 0;
     const archiveIndexer = masterIndexer.internetArchiveIndexer;
     const originalProcess = archiveIndexer.processCompleteItem;
-    archiveIndexer.processCompleteItem = async function (metadata: any) {
+    archiveIndexer.processCompleteItem = async function (metadata: unknown) {
       if (archiveCount >= MAX_ARCHIVE_ITEMS) return false;
       const result = await originalProcess.apply(this, [metadata]);
       if (result) archiveCount++;
@@ -236,7 +237,7 @@ async function patchIndexersForQuickTest(masterIndexer: any) {
     let discordCount = 0;
     const discordIndexer = masterIndexer.discordIndexer;
     const originalProcess = discordIndexer.processDiscordMessage;
-    discordIndexer.processDiscordMessage = async function (...args: any[]) {
+    discordIndexer.processDiscordMessage = async function (...args: unknown[]) {
       if (discordCount >= MAX_DISCORD_PER_CHANNEL * 2) return []; // 2 channels
       const result = await originalProcess.apply(this, args);
       if (result.length > 0) discordCount++;
@@ -249,7 +250,7 @@ async function patchIndexersForQuickTest(masterIndexer: any) {
     let hognoseCount = 0;
     const hognoseIndexer = masterIndexer.hognoseIndexer;
     const originalProcess = hognoseIndexer.processLevel;
-    hognoseIndexer.processLevel = async function (...args: any[]) {
+    hognoseIndexer.processLevel = async function (...args: unknown[]) {
       if (hognoseCount >= MAX_HOGNOSE_ITEMS) return;
       const result = await originalProcess.apply(this, args);
       if (result) hognoseCount++;
@@ -261,7 +262,26 @@ async function patchIndexersForQuickTest(masterIndexer: any) {
 /**
  * Generate a text comparison of the three sources
  */
-function generateSourceComparison(report: any) {
+interface AnalysisReport {
+  levelCount: number;
+  dataQuality?: {
+    completenessScore: number;
+  };
+  statistics: {
+    bySource: Map<
+      MapSource,
+      {
+        levelCount: number;
+        uniqueAuthors: number;
+        averageSize: number;
+        oldestLevel?: Date;
+        newestLevel?: Date;
+      }
+    >;
+  };
+}
+
+function generateSourceComparison(report: AnalysisReport) {
   const lines = [
     '=== SOURCE COMPARISON ===',
     '',
@@ -312,7 +332,7 @@ function generateSourceComparison(report: any) {
 
   lines.push('');
   lines.push('Data Quality Score:');
-  lines.push(`Overall: ${report.dataQuality.completenessScore}%`);
+  lines.push(`Overall: ${report.dataQuality?.completenessScore ?? 'N/A'}%`);
 
   return lines.join('\n');
 }

@@ -23,12 +23,12 @@ async function main() {
 
   const indexer = new DiscordUnifiedIndexer(DISCORD_CHANNELS, OUTPUT_DIR);
 
-  let progressBar: ProgressBar | null = null;
+  let progressBar: ProgressBar | undefined;
 
   const progressCallback = (progress: IndexerProgress) => {
     if (progress.phase === 'scraping') {
       if (progressBar) {
-        (progressBar as any).terminate();
+        progressBar.terminate();
       }
       logger.info(progress.message);
     } else if (progress.phase === 'downloading') {
@@ -50,7 +50,7 @@ async function main() {
     const result = await indexer.indexDiscord(progressCallback);
 
     if (progressBar) {
-      (progressBar as any).terminate();
+      progressBar.terminate();
     }
 
     if (result.success) {

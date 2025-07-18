@@ -1,4 +1,4 @@
-import { OutputValidator } from '../../src/tests/outputValidator';
+import { OutputValidator, ValidationResult } from '../../src/tests/outputValidator';
 import { AnalysisReporter } from '../../src/tests/analysisReporter';
 import { MapSource } from '../../src/types';
 import { logger } from '../../src/utils/logger';
@@ -36,7 +36,7 @@ async function validateFullCatalog() {
 
   // Validate each source
   const validator = new OutputValidator();
-  const allResults: any[] = [];
+  const allResults: ValidationResult[] = [];
 
   logger.info('\n=== Validating Each Source ===\n');
 

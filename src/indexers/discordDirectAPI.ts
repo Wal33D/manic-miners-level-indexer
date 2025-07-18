@@ -435,9 +435,11 @@ export class DiscordDirectAPI {
 
       // Check if this file has been processed before
       if (this.processedHashes.has(fileHash)) {
-        const existingLevelId = this.processedHashes.get(fileHash)!;
-        logger.info(`Duplicate file detected: ${attachment.filename} (hash: ${fileHash})`);
-        logger.info(`Already exists as level ID: ${existingLevelId}`);
+        const existingLevelId = this.processedHashes.get(fileHash);
+        if (existingLevelId) {
+          logger.info(`Duplicate file detected: ${attachment.filename} (hash: ${fileHash})`);
+          logger.info(`Already exists as level ID: ${existingLevelId}`);
+        }
 
         // Clean up the downloaded file
         await fs.remove(levelDir);

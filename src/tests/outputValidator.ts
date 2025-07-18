@@ -354,7 +354,10 @@ export class OutputValidator {
         });
       }
 
-      const sourceStats = summary.bySource.get(source)!;
+      const sourceStats = summary.bySource.get(source);
+      if (!sourceStats) {
+        continue;
+      }
       sourceStats.total++;
       if (result.valid) sourceStats.valid++;
       if (result.errors.length > 0) sourceStats.withErrors++;

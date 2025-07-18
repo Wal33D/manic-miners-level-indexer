@@ -153,7 +153,10 @@ export class AnalysisReporter {
 
     for (const level of levels) {
       const source = level.metadata.source;
-      const sourceStats = statistics.bySource.get(source)!;
+      const sourceStats = statistics.bySource.get(source);
+      if (!sourceStats) {
+        continue; // Skip if source stats not found
+      }
       const levelSize = this.getLevelSize(level);
 
       // Update source statistics
@@ -177,7 +180,10 @@ export class AnalysisReporter {
       if (!authorsBySource.has(source)) {
         authorsBySource.set(source, new Set());
       }
-      authorsBySource.get(source)!.add(author);
+      const sourceAuthors = authorsBySource.get(source);
+      if (sourceAuthors) {
+        sourceAuthors.add(author);
+      }
 
       // Track format versions
       const version = level.metadata.formatVersion || 'unknown';
@@ -192,7 +198,10 @@ export class AnalysisReporter {
         if (!tagsBySource.has(source)) {
           tagsBySource.set(source, new Map());
         }
-        const sourceTags = tagsBySource.get(source)!;
+        const sourceTags = tagsBySource.get(source);
+        if (!sourceTags) {
+          continue;
+        }
 
         for (const tag of level.metadata.tags) {
           statistics.tagCloud.set(tag, (statistics.tagCloud.get(tag) || 0) + 1);
@@ -292,7 +301,8 @@ export class AnalysisReporter {
       // Check metadata completeness
       for (const field of fieldChecks) {
         if (!level.metadata[field as keyof typeof level.metadata]) {
-          metrics.missingMetadataFields.set(field, metrics.missingMetadataFields.get(field)! + 1);
+          const currentCount = metrics.missingMetadataFields.get(field) || 0;
+          metrics.missingMetadataFields.set(field, currentCount + 1);
         }
       }
 
@@ -339,7 +349,7 @@ export class AnalysisReporter {
 
       for (const [field, weight] of Object.entries(weights)) {
         if (metrics.missingMetadataFields.has(field)) {
-          const missing = metrics.missingMetadataFields.get(field)!;
+          const missing = metrics.missingMetadataFields.get(field) || 0;
           totalScore += weight * (1 - missing / levels.length);
         }
       }
@@ -394,7 +404,7 @@ export class AnalysisReporter {
 
     // Format version recommendations
     if (statistics.byFormatVersion.has('unknown')) {
-      const unknownCount = statistics.byFormatVersion.get('unknown')!;
+      const unknownCount = statistics.byFormatVersion.get('unknown') || 0;
       if (unknownCount > 10) {
         recommendations.push(
           '🔍 Many levels have unknown format versions. Improve version detection.'

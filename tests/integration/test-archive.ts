@@ -34,18 +34,21 @@ async function testArchiveIndexer() {
   let itemsProcessed = 0;
 
   // Monkey patch to limit items
-  const originalProcessCompleteItem = (indexer as any).processCompleteItem;
-  (indexer as any).processCompleteItem = async function (metadata: any) {
-    if (itemsProcessed >= MAX_ITEMS) {
-      logger.info(`Skipping item (reached limit of ${MAX_ITEMS})`);
-      return false;
-    }
-    const result = await originalProcessCompleteItem.apply(this, [metadata]);
-    if (result) {
-      itemsProcessed++;
-    }
-    return result;
-  };
+  type ProcessItemFn = (metadata: unknown) => Promise<boolean>;
+  const originalProcessCompleteItem = (indexer as unknown as { processCompleteItem: ProcessItemFn })
+    .processCompleteItem;
+  (indexer as unknown as { processCompleteItem: ProcessItemFn }).processCompleteItem =
+    async function (metadata: unknown) {
+      if (itemsProcessed >= MAX_ITEMS) {
+        logger.info(`Skipping item (reached limit of ${MAX_ITEMS})`);
+        return false;
+      }
+      const result = await originalProcessCompleteItem.apply(this, [metadata]);
+      if (result) {
+        itemsProcessed++;
+      }
+      return result;
+    };
 
   const startTime = Date.now();
 

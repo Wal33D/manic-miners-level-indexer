@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { DiscordUnifiedIndexer } from '../../src/indexers/discordUnified';
 import { logger } from '../../src/utils/logger';
 import { FileUtils } from '../../src/utils/fileUtils';
-import { Level } from '../../src/types';
+import { Level, DiscordMessage } from '../../src/types';
 import path from 'path';
 import fs from 'fs-extra';
 
@@ -37,11 +37,20 @@ async function testDiscordSmall() {
     // Monkey patch to limit messages per channel
     const messageCountPerChannel: Record<string, number> = {};
     const maxMessagesPerChannel = 10;
-    const originalProcess = (discordIndexer as any).processDiscordMessage;
-    (discordIndexer as any).processDiscordMessage = async function (
-      message: any,
+    type ProcessMessageFn = (
+      message: DiscordMessage,
       channelId: string,
-      ...args: any[]
+      ...args: unknown[]
+    ) => Promise<unknown[]>;
+    const originalProcess = (
+      discordIndexer as unknown as { processDiscordMessage: ProcessMessageFn }
+    ).processDiscordMessage;
+    (
+      discordIndexer as unknown as { processDiscordMessage: ProcessMessageFn }
+    ).processDiscordMessage = async function (
+      message: DiscordMessage,
+      channelId: string,
+      ...args: unknown[]
     ) {
       if (!messageCountPerChannel[channelId]) {
         messageCountPerChannel[channelId] = 0;
