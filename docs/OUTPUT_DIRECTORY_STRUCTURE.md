@@ -12,10 +12,10 @@ All indexed content is stored in the `./data` directory by default. This can be 
 ./data/
 ├── levels-discord/           # Discord levels
 │   └── [levelId]/           # Each level in its own directory
-│       ├── *.dat            # Level file(s)
-│       ├── screenshot.*     # Screenshot image
-│       ├── thumb.*          # Thumbnail image
-│       └── catalog.json     # Level metadata
+│       ├── *.dat                   # Level file(s)
+│       ├── screenshot_original.*   # Screenshot image
+│       ├── thumbnail_original.*    # Thumbnail image
+│       └── catalog.json            # Level metadata
 ├── levels-archive/          # Internet Archive levels
 │   └── [levelId]/          # Same structure as Discord
 ├── levels-hognose/          # GitHub/Hognose levels
@@ -37,11 +37,11 @@ Each level is stored in its own directory with a unique ID:
 
 ```
 [levelId]/
-├── *.dat              # One or more level files
-├── screenshot.png     # Main screenshot (if available)
-├── thumb.jpg          # Thumbnail image (if available)
-├── catalog.json       # Level metadata and file listing
-└── [other files]      # Any additional files from source
+├── *.dat                    # One or more level files
+├── screenshot_original.*    # Main screenshot (if available)
+├── thumbnail_original.*     # Thumbnail image (if available)
+├── catalog.json            # Level metadata and file listing
+└── [other files]           # Any additional files from source
 ```
 
 ## State Files

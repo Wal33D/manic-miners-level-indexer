@@ -89,13 +89,13 @@ async function testImprovedImageHandling() {
           if (images.screenshots.length > 0) {
             logger.info(`  📸 Screenshots selected:`);
             logger.info(
-              `     - ${images.screenshots[0].name} → screenshot${path.extname(images.screenshots[0].name)}`
+              `     - ${images.screenshots[0].name} → screenshot_original${path.extname(images.screenshots[0].name)}`
             );
           }
           if (images.thumbnails.length > 0) {
             logger.info(`  📱 Thumbnail selected:`);
             logger.info(
-              `     - ${images.thumbnails[0].name} → thumb${path.extname(images.thumbnails[0].name)}`
+              `     - ${images.thumbnails[0].name} → thumbnail_original${path.extname(images.thumbnails[0].name)}`
             );
           }
         } else {
