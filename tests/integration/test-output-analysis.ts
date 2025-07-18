@@ -181,7 +181,7 @@ async function testOutputAnalysis() {
     });
 
     // Generate source comparison
-    const comparison = generateSourceComparison(report as any);
+    const comparison = generateSourceComparison(report);
     await fs.writeFile(path.join(reportsDir, 'source-comparison.txt'), comparison);
 
     logger.info(`✅ Reports generated:`);
