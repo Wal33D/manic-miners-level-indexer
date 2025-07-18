@@ -1,4 +1,4 @@
-import { Level, MapSource } from '../types';
+import { Level, MapSource, CatalogIndex } from '../types';
 import { ValidationResult, ValidationSummary } from './outputValidator';
 import { FileUtils } from '../utils/fileUtils';
 import fs from 'fs-extra';
@@ -88,11 +88,17 @@ export class AnalysisReporter {
 
     if (await fs.pathExists(catalogIndexPath)) {
       // Use catalog index if available
-      const catalogIndex = await FileUtils.readJSON<{ levels: string[] }>(catalogIndexPath);
-      if (catalogIndex?.levels) {
-        for (const levelPath of catalogIndex.levels) {
-          const catalog = await FileUtils.readJSON<Level>(levelPath);
-          if (catalog) levels.push(catalog);
+      const catalogIndex = await FileUtils.readJSON<CatalogIndex>(catalogIndexPath);
+      if (catalogIndex?.levels && Array.isArray(catalogIndex.levels)) {
+        // If levels are already full Level objects, use them directly
+        if (catalogIndex.levels.length > 0 && typeof catalogIndex.levels[0] === 'object') {
+          levels.push(...catalogIndex.levels);
+        } else {
+          // Otherwise treat as paths
+          for (const levelPath of catalogIndex.levels) {
+            const catalog = await FileUtils.readJSON<Level>(levelPath as unknown as string);
+            if (catalog) levels.push(catalog);
+          }
         }
       }
     } else {

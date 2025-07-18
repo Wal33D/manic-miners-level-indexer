@@ -32,6 +32,8 @@
     "index:archive": "ts-node scripts/index-archive.ts",
     "index:discord": "ts-node scripts/index-discord-unified.ts",
     "test:discord:auth": "ts-node scripts/test-discord-auth.ts",
+    "test:discord:auth:enhanced": "ts-node scripts/test-discord-auth-enhanced.ts",
+    "test:discord:auth:auto": "ts-node scripts/test-discord-auto-login.ts",
     "index:hognose": "ts-node scripts/index-hognose.ts",
     "build:discord-catalog": "ts-node scripts/build-discord-catalog.ts",
     "clean:test": "ts-node scripts/clean-test-outputs.ts",

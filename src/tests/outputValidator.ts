@@ -44,8 +44,9 @@ export interface SourceValidationStats {
 }
 
 export class OutputValidator {
-  private requiredMetadataFields = ['id', 'title', 'author', 'source', 'indexed'];
+  private requiredMetadataFields = ['id', 'title', 'author', 'source'];
   private recommendedMetadataFields = ['description', 'postedDate', 'tags', 'formatVersion'];
+  private requiredLevelFields = ['indexed', 'lastUpdated'];
 
   async validateLevel(levelPath: string): Promise<ValidationResult> {
     const errors: string[] = [];
@@ -96,6 +97,13 @@ export class OutputValidator {
       for (const field of this.recommendedMetadataFields) {
         if (!(field in level.metadata) || !level.metadata[field as keyof LevelMetadata]) {
           warnings.push(`Missing recommended metadata field: ${field}`);
+        }
+      }
+
+      // Validate required level fields (at root level, not in metadata)
+      for (const field of this.requiredLevelFields) {
+        if (!(field in level) || !level[field as keyof Level]) {
+          errors.push(`Missing required level field: ${field}`);
         }
       }
 
