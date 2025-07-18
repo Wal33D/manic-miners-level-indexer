@@ -274,8 +274,8 @@ interface AnalysisReport {
         levelCount: number;
         uniqueAuthors: number;
         averageSize: number;
-        oldestLevel?: Date;
-        newestLevel?: Date;
+        oldestLevel?: Date | null;
+        newestLevel?: Date | null;
       }
     >;
   };

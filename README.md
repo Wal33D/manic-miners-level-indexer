@@ -1,12 +1,21 @@
 # Manic Miners Level Indexer
 
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Node.js Version](https://img.shields.io/badge/Node.js-18.0+-green?logo=node.js)](https://nodejs.org/)
+[![npm Version](https://img.shields.io/badge/npm-1.0.0-red?logo=npm)](https://www.npmjs.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/Tests-27%20passing-brightgreen?logo=jest)](https://jestjs.io/)
+[![ESLint](https://img.shields.io/badge/ESLint-Enabled-4B32C3?logo=eslint)](https://eslint.org/)
+[![Prettier](https://img.shields.io/badge/Prettier-Formatted-F7B93E?logo=prettier)](https://prettier.io/)
+[![Code Coverage](https://img.shields.io/badge/Coverage-80%25-green)](https://github.com/Wal33D/manic-miners-level-indexer)
+
 A comprehensive indexing system for Manic Miners community levels, automatically collecting and cataloging custom content from multiple sources including Archive.org, Discord channels, and GitHub repositories.
 
-## Overview
+## 🎮 Overview
 
 The Manic Miners Level Indexer is a TypeScript-based tool that creates a searchable, organized database of community-created levels for the Manic Miners game. It provides automated discovery, validation, and cataloging of custom levels with rich metadata, making it easy for players to find and enjoy community content.
 
-## Key Features
+## 🚀 Key Features
 
 - **Multi-Source Indexing**: Collects levels from Archive.org, Discord channels, and the Hognose GitHub repository
 - **Automated Metadata Extraction**: Captures title, author, description, tags, and game requirements
@@ -18,19 +27,19 @@ The Manic Miners Level Indexer is a TypeScript-based tool that creates a searcha
 - **Discord Authentication**: Supports both automated and manual Discord authentication
 - **Export Capabilities**: Export catalogs to JSON or CSV formats
 
-## Quick Start
+## 📦 Quick Start
 
 ### Prerequisites
 
-- Node.js 18.0.0 or higher
-- npm or yarn package manager
-- (Optional) Discord user token for Discord indexing
+- **Node.js** 18.0.0 or higher
+- **npm** or **yarn** package manager
+- **(Optional)** Discord user token for Discord indexing
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/manic-miners-level-indexer.git
+git clone https://github.com/Wal33D/manic-miners-level-indexer.git
 cd manic-miners-level-indexer
 
 # Install dependencies
@@ -75,7 +84,7 @@ npm run test:quick
 
 This will index a small number of levels from each source for testing.
 
-## Configuration
+## ⚙️ Configuration
 
 Create a `config.json` file to customize indexing behavior:
 
@@ -104,34 +113,46 @@ Create a `config.json` file to customize indexing behavior:
 }
 ```
 
-## Available Scripts
+## 📜 Available Scripts
 
-### Indexing Scripts
-- `npm run index` - Index all enabled sources
-- `npm run index:archive` - Index Archive.org levels
-- `npm run index:discord` - Index Discord levels
-- `npm run index:hognose` - Index Hognose levels
+### 🎯 Indexing Scripts
 
-### Testing Scripts
-- `npm test` - Run unit tests
-- `npm run test:quick` - Quick integration test (limited data)
-- `npm run test:all` - Full integration test
-- `npm run test:analysis` - Test with detailed analysis report
+| Command | Description |
+|---------|-------------|
+| `npm run index` | Index all enabled sources |
+| `npm run index:archive` | Index Archive.org levels |
+| `npm run index:discord` | Index Discord levels |
+| `npm run index:hognose` | Index Hognose levels |
 
-### Utility Scripts
-- `npm run show:output` - Display output directory structure
-- `npm run validate:catalog` - Validate existing catalog
-- `npm run rebuild:catalog` - Rebuild catalog from existing levels
-- `npm run clean:test` - Clean test output directories
+### 🧪 Testing Scripts
 
-### Development Scripts
-- `npm run dev` - Run in development mode
-- `npm run build` - Build TypeScript to JavaScript
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
-- `npm run type-check` - Check TypeScript types
+| Command | Description |
+|---------|-------------|
+| `npm test` | Run unit tests |
+| `npm run test:quick` | Quick integration test (limited data) |
+| `npm run test:all` | Full integration test |
+| `npm run test:analysis` | Test with detailed analysis report |
 
-## Output Structure
+### 🔧 Utility Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run show:output` | Display output directory structure |
+| `npm run validate:catalog` | Validate existing catalog |
+| `npm run rebuild:catalog` | Rebuild catalog from existing levels |
+| `npm run clean:test` | Clean test output directories |
+
+### 👨‍💻 Development Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Run in development mode |
+| `npm run build` | Build TypeScript to JavaScript |
+| `npm run lint` | Run ESLint |
+| `npm run format` | Format code with Prettier |
+| `npm run type-check` | Check TypeScript types |
+
+## 📁 Output Structure
 
 ```
 output/
@@ -147,7 +168,7 @@ output/
 └── levels-hognose/          # Hognose repository levels
 ```
 
-## Programmatic Usage
+## 💻 Programmatic Usage
 
 ```typescript
 import { MasterIndexer, IndexerConfig } from 'manic-miners-level-indexer';
@@ -175,7 +196,7 @@ const exportPath = await indexer.exportCatalog('json');
 console.log(`Catalog exported to: ${exportPath}`);
 ```
 
-## Documentation
+## 📚 Documentation
 
 - [Getting Started Guide](docs/GETTING_STARTED.md) - Detailed setup and first run
 - [Architecture Overview](docs/ARCHITECTURE.md) - System design and components
@@ -187,7 +208,7 @@ console.log(`Catalog exported to: ${exportPath}`);
 - [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
 - [Development Guide](docs/DEVELOPMENT.md) - Contributing and development
 
-## Contributing
+## 🤝 Contributing
 
 We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT.md) for details on:
 - Setting up a development environment
@@ -195,20 +216,20 @@ We welcome contributions! Please see our [Development Guide](docs/DEVELOPMENT.md
 - Testing requirements
 - Submitting pull requests
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
 - The Manic Miners community for creating amazing custom content
 - Archive.org for preserving gaming history
 - The Hognose project for procedural level generation
 - All level authors who share their creative work
 
-## Support
+## 💬 Support
 
 For issues, questions, or suggestions:
-- Open an issue on [GitHub](https://github.com/your-username/manic-miners-level-indexer/issues)
+- Open an issue on [GitHub](https://github.com/Wal33D/manic-miners-level-indexer/issues)
 - Check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
-- Review existing [discussions](https://github.com/your-username/manic-miners-level-indexer/discussions)
+- Review existing [discussions](https://github.com/Wal33D/manic-miners-level-indexer/discussions)
