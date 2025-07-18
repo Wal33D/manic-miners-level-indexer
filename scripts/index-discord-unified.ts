@@ -8,7 +8,8 @@ import { IndexerProgress } from '../src/types';
 dotenv.config();
 
 const DISCORD_CHANNELS = [
-  '1139908458968252457', // The community-levels forum channel
+  '683985075704299520', // Old pre-v1 maps
+  '1139908458968252457', // Community levels (v1+)
 ];
 
 const OUTPUT_DIR = './data';
@@ -17,6 +18,8 @@ async function main() {
   logger.info(chalk.blue('🤖 Starting Unified Discord Indexer...'));
   logger.info(`Output directory: ${OUTPUT_DIR}`);
   logger.info(`Channels to index: ${DISCORD_CHANNELS.length}`);
+  logger.info('  - 683985075704299520 (Old pre-v1 maps)');
+  logger.info('  - 1139908458968252457 (Community levels v1+)');
 
   const indexer = new DiscordUnifiedIndexer(DISCORD_CHANNELS, OUTPUT_DIR);
 

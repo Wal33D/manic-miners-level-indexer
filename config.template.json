@@ -14,7 +14,10 @@
     },
     "discord": {
       "enabled": true,
-      "channels": ["https://discord.com/channels/YOUR_SERVER_ID/YOUR_CHANNEL_ID"]
+      "channels": [
+        "683985075704299520",
+        "1139908458968252457"
+      ]
     },
     "hognose": {
       "enabled": true,

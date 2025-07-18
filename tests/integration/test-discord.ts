@@ -5,6 +5,8 @@ import path from 'path';
 import { TestPaths } from '../../src/tests/test-config';
 import { getSourceLevelsDir } from '../../src/utils/sourceUtils';
 import { MapSource } from '../../src/types';
+import { OutputValidator } from '../../src/tests/outputValidator';
+import { AnalysisReporter } from '../../src/tests/analysisReporter';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -12,7 +14,10 @@ dotenv.config();
 
 async function testDiscordIndexer() {
   const outputDir = TestPaths.integration.discord;
-  const channels = ['1139908458968252457']; // Use channel ID instead of full URL
+  const channels = [
+    '683985075704299520', // Old pre-v1 maps
+    '1139908458968252457', // Community levels (v1+)
+  ];
 
   // Clean up previous test output
   await fs.remove(outputDir);
@@ -20,7 +25,9 @@ async function testDiscordIndexer() {
 
   logger.info('Starting Discord indexer test...');
   logger.info('Output directory:', outputDir);
-  logger.info('Channels to index:', channels);
+  logger.info('Channels to index:');
+  logger.info('  - 683985075704299520 (Old pre-v1 maps)');
+  logger.info('  - 1139908458968252457 (Community levels v1+)');
 
   const indexer = new DiscordUnifiedIndexer(channels, outputDir);
 
@@ -78,6 +85,32 @@ async function testDiscordIndexer() {
       }
     }
   }
+
+  // Validate output using shared validator
+  logger.info('\n=== Validating Output ===');
+  const validator = new OutputValidator();
+  const { results, summary } = await validator.validateDirectory(outputDir, MapSource.DISCORD);
+
+  logger.info(validator.formatSummary(summary));
+
+  // Generate analysis report
+  logger.info('\n=== Generating Analysis ===');
+  const reporter = new AnalysisReporter();
+  const report = await reporter.analyzeOutput(outputDir, results);
+
+  logger.info(`Data quality score: ${report.dataQuality.completenessScore}%`);
+  logger.info(`Unique authors: ${report.statistics.byAuthor.size}`);
+
+  if (report.recommendations.length > 0) {
+    logger.info('\nRecommendations:');
+    report.recommendations.forEach(rec => logger.info(`- ${rec}`));
+  }
+
+  // Save analysis report
+  const reportsDir = path.join(outputDir, 'reports');
+  await fs.ensureDir(reportsDir);
+  await reporter.generateHTMLReport(report, path.join(reportsDir, 'discord-analysis.html'));
+  logger.info(`\nAnalysis report saved to: ${path.join(reportsDir, 'discord-analysis.html')}`);
 
   // Rebuild catalog index to make levels accessible via CatalogManager
   logger.info('\nRebuilding catalog index...');

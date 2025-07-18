@@ -11,8 +11,8 @@ export const defaultConfig: IndexerConfig = {
     discord: {
       enabled: true,
       channels: [
-        'https://discord.com/channels/288873207503347712/288873207503347712',
-        'https://discord.com/channels/288873207503347712/574327631175901201',
+        '683985075704299520', // Old pre-v1 maps
+        '1139908458968252457', // Community levels (v1+)
       ],
     },
     hognose: {

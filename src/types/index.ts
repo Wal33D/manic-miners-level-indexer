@@ -21,6 +21,7 @@ export interface LevelMetadata {
   rating?: number;
   downloadCount?: number;
   formatVersion?: 'below-v1' | 'v1' | 'v2' | 'unknown';
+  releaseId?: string;
 }
 
 export interface LevelFile {
@@ -28,7 +29,7 @@ export interface LevelFile {
   path: string;
   size: number;
   hash?: string;
-  type: 'dat' | 'other';
+  type: 'dat' | 'image' | 'thumbnail' | 'other';
 }
 
 export interface Level {

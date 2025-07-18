@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { DiscordDirectAPI } from '../src/indexers/discordDirectAPI';
+import { DiscordUnifiedIndexer } from '../src/indexers/discordUnified';
 import { logger } from '../src/utils/logger';
 import { FileUtils } from '../src/utils/fileUtils';
 import { Level } from '../src/types';
@@ -22,24 +22,39 @@ async function testDiscordSmall() {
     const processedPath = path.join(TEST_OUTPUT_DIR, 'discord_direct_processed.json');
     await fs.writeJSON(processedPath, []); // Start fresh
 
-    // Test with just one channel
-    const TEST_CHANNELS = ['683985075704299520']; // Old pre-v1 maps channel
+    // Test with both channels
+    const TEST_CHANNELS = [
+      '683985075704299520', // Old pre-v1 maps
+      '1139908458968252457', // Community levels (v1+)
+    ];
 
-    logger.info('Initializing Discord indexer...');
-    const discordIndexer = new DiscordDirectAPI(TEST_CHANNELS, TEST_OUTPUT_DIR);
+    logger.info('Initializing Discord unified indexer...');
+    logger.info('Testing channels:');
+    logger.info('  - 683985075704299520 (Old pre-v1 maps)');
+    logger.info('  - 1139908458968252457 (Community levels v1+)');
+    const discordIndexer = new DiscordUnifiedIndexer(TEST_CHANNELS, TEST_OUTPUT_DIR);
 
-    // Monkey patch to limit messages
-    let messageCount = 0;
-    const maxMessages = 3;
+    // Monkey patch to limit messages per channel
+    const messageCountPerChannel: Record<string, number> = {};
+    const maxMessagesPerChannel = 10;
     const originalProcess = (discordIndexer as any).processDiscordMessage;
-    (discordIndexer as any).processDiscordMessage = async function (...args: any[]) {
-      if (messageCount >= maxMessages) {
-        logger.info(`Skipping message (reached limit of ${maxMessages})`);
+    (discordIndexer as any).processDiscordMessage = async function (
+      message: any,
+      channelId: string,
+      ...args: any[]
+    ) {
+      if (!messageCountPerChannel[channelId]) {
+        messageCountPerChannel[channelId] = 0;
+      }
+      if (messageCountPerChannel[channelId] >= maxMessagesPerChannel) {
+        logger.info(
+          `Skipping message in channel ${channelId} (reached limit of ${maxMessagesPerChannel} per channel)`
+        );
         return [];
       }
-      const result = await originalProcess.apply(this, args);
+      const result = await originalProcess.apply(this, [message, channelId, ...args]);
       if (result.length > 0) {
-        messageCount++;
+        messageCountPerChannel[channelId]++;
       }
       return result;
     };
@@ -50,6 +65,12 @@ async function testDiscordSmall() {
     });
 
     logger.info(`\nIndexing result: ${result.levelsProcessed} levels processed`);
+    logger.info(`Messages processed per channel:`);
+    Object.entries(messageCountPerChannel).forEach(([channelId, count]) => {
+      const channelName =
+        channelId === '683985075704299520' ? 'Old pre-v1 maps' : 'Community levels (v1+)';
+      logger.info(`  - ${channelName}: ${count} messages`);
+    });
 
     if (result.levelsProcessed > 0) {
       // Find the first level
