@@ -123,3 +123,38 @@ export interface DiscordMessage {
     size: number;
   }[];
 }
+
+export interface DuplicateGroup {
+  hash: string;
+  fileSize: number;
+  levels: Array<{
+    id: string;
+    source: MapSource;
+    title: string;
+    author: string;
+    path: string;
+    uploadDate?: Date;
+    metadata: LevelMetadata;
+  }>;
+}
+
+export interface DuplicateAnalysisReport {
+  totalLevels: number;
+  uniqueLevels: number;
+  duplicateCount: number;
+  duplicateGroups: DuplicateGroup[];
+  statistics: {
+    bySource: Record<
+      MapSource,
+      {
+        total: number;
+        unique: number;
+        duplicates: number;
+      }
+    >;
+    crossSourceDuplicates: number;
+    withinSourceDuplicates: number;
+    largestDuplicateGroup: number;
+  };
+  generatedAt: Date;
+}

@@ -40,7 +40,8 @@
     "rebuild:catalog": "ts-node scripts/utils/rebuild-catalog.ts",
     "show:output": "ts-node scripts/utils/show-output-structure.ts",
     "validate:catalog": "ts-node scripts/utils/validate-full-catalog.ts",
-    "migrate:versions": "ts-node src/scripts/migrateFormatVersions.ts"
+    "migrate:versions": "ts-node src/scripts/migrateFormatVersions.ts",
+    "analyze:duplicates": "ts-node scripts/analyze-duplicates.ts"
   },
   "keywords": [
     "manic-miners",
