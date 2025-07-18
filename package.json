@@ -27,6 +27,7 @@
     "test:all": "ts-node tests/integration/test-all-indexers.ts",
     "test:analysis": "ts-node tests/integration/test-output-analysis.ts",
     "test:quick": "npm run test:archive:quick && npm run test:discord:quick && npm run test:hognose:quick",
+    "test:full": "ts-node scripts/run-full-test-suite.ts",
     "verify:hognose": "ts-node tests/integration/verify-hognose-complete.ts",
     "index": "ts-node scripts/index-all.ts",
     "index:archive": "ts-node scripts/index-archive.ts",
