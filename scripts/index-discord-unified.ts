@@ -12,7 +12,7 @@ const DISCORD_CHANNELS = [
   '1139908458968252457', // Community levels (v1+)
 ];
 
-const OUTPUT_DIR = './data';
+const OUTPUT_DIR = './output';
 
 async function main() {
   logger.info(chalk.blue('🤖 Starting Unified Discord Indexer...'));

@@ -27,8 +27,6 @@ config.*.json
 output/
 temp/
 test-output/
-test-data/
-data/
 levels/
 levels-archive/
 levels-discord/

@@ -8,7 +8,7 @@ import fs from 'fs-extra';
 
 dotenv.config();
 
-const TEST_OUTPUT_DIR = path.join(process.cwd(), 'test-data');
+const TEST_OUTPUT_DIR = path.join(process.cwd(), 'test-output');
 
 async function testDiscordSmall() {
   try {

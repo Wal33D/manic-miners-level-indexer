@@ -16,7 +16,7 @@ The Manic Miners Level Indexer now includes automated Discord authentication usi
 1. **Network Interception**: The auth module uses Playwright to intercept Discord API requests and capture the authorization header
 2. **Smart Token Capture**: Monitors requests to `discord.com/api/v*` endpoints to extract tokens
 3. **User Info Extraction**: Captures user ID and username from API responses
-4. **Secure Caching**: Tokens are cached in `./data/.auth/discord-token.json` for future use
+4. **Secure Caching**: Tokens are cached in `./output/.auth/discord-token.json` for future use
 
 ## Usage
 
@@ -60,7 +60,7 @@ If no credentials are provided, a browser window will open for manual login:
 
 ## Token Storage
 
-Tokens are cached in JSON format at `./data/.auth/discord-token.json`:
+Tokens are cached in JSON format at `./output/.auth/discord-token.json`:
 
 ```json
 {

@@ -1,7 +1,7 @@
 import { IndexerConfig } from '../types';
 
 export const defaultConfig: IndexerConfig = {
-  outputDir: './data',
+  outputDir: './output',
   sources: {
     archive: {
       enabled: true,

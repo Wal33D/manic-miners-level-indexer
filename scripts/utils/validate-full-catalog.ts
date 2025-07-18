@@ -6,7 +6,7 @@ import fs from 'fs-extra';
 import path from 'path';
 
 async function validateFullCatalog() {
-  const outputDir = './data';
+  const outputDir = './output';
 
   logger.info('=== Validating Full Manic Miners Catalog ===\n');
 

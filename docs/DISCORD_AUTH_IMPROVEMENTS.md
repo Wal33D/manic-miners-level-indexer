@@ -78,7 +78,7 @@ const result = await auth.getToken({
 ## File Locations
 
 ### Cache Directory
-Default: `./data/.auth/`
+Default: `./output/.auth/`
 
 Contains:
 - `discord-token.json` - Cached token and metadata

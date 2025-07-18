@@ -2,14 +2,14 @@
 
 This document describes the standardized output directory structure for the Manic Miners Level Indexer.
 
-## Standard Output Directory: `./data`
+## Standard Output Directory: `./output`
 
-All indexed content is stored in the `./data` directory by default. This can be configured via `config.json`.
+All indexed content is stored in the `./output` directory by default. This can be configured via `config.json`.
 
 ## Directory Structure
 
 ```
-./data/
+./output/
 ├── levels-discord/           # Discord levels
 │   └── [levelId]/           # Each level in its own directory
 │       ├── *.dat                   # Level file(s)
@@ -66,7 +66,7 @@ The output directory can be configured in `config.json`:
 
 ```json
 {
-  "outputDir": "./data"
+  "outputDir": "./output"
 }
 ```
 

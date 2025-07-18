@@ -45,7 +45,7 @@ export class DiscordAuth {
   private maxRetries = 3;
   private retryDelay = 2000;
 
-  constructor(cacheDir: string = './data/.auth') {
+  constructor(cacheDir: string = './output/.auth') {
     this.cacheDir = cacheDir;
     this.cacheFile = path.join(cacheDir, 'discord-token.json');
     this.sessionFile = path.join(cacheDir, 'discord-session.json');
@@ -160,12 +160,12 @@ export class DiscordAuth {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
         },
       });
-      
+
       if (!response.ok) {
         logger.warn(`Token validation failed with status: ${response.status}`);
         return false;
       }
-      
+
       // Update cached user info while we're validating
       try {
         const user = await response.json();
@@ -178,7 +178,7 @@ export class DiscordAuth {
       } catch (error) {
         // Ignore errors updating cache
       }
-      
+
       return true;
     } catch (error) {
       logger.error('Token validation error:', error);

@@ -36,7 +36,7 @@ cp config.template.json config.json
 ```
 
 2. Edit `config.json` to customize your settings:
-- `outputDir`: Where indexed levels will be stored (default: `./data`)
+- `outputDir`: Where indexed levels will be stored (default: `./output`)
 - Discord channels: Update with your target forum channels
 - Archive settings: Adjust search parameters as needed
 
@@ -87,7 +87,7 @@ The system uses a JSON configuration file with the following structure:
 
 ```json
 {
-  "outputDir": "./data",
+  "outputDir": "./output",
   "sources": {
     "archive": {
       "enabled": true,
@@ -173,7 +173,7 @@ npm start
 ## Output Structure
 
 ```
-data/
+output/
 ├── levels-discord/
 │   ├── {level-id}/
 │   │   ├── catalog.json
@@ -229,11 +229,11 @@ import { HognoseIndexer } from './src/indexers/hognoseIndexer';
 import { CatalogManager } from './src/catalog/catalogManager';
 
 // Run the indexer
-const indexer = new HognoseIndexer('charredUtensil/hognose', './data');
+const indexer = new HognoseIndexer('charredUtensil/hognose', './output');
 await indexer.indexHognose();
 
 // IMPORTANT: Rebuild the catalog index
-const catalogManager = new CatalogManager('./data');
+const catalogManager = new CatalogManager('./output');
 await catalogManager.rebuildCatalogIndex();
 
 // Now you can access all levels
@@ -257,7 +257,7 @@ await masterIndexer.indexAll(); // Automatically rebuilds catalog index
 Once the catalog index is built, you can access levels using CatalogManager:
 
 ```typescript
-const catalogManager = new CatalogManager('./data');
+const catalogManager = new CatalogManager('./output');
 await catalogManager.loadCatalogIndex();
 
 // Get all levels
@@ -295,7 +295,7 @@ The HognoseIndexer includes smart release management:
 ### Hognose Options
 
 ```typescript
-const indexer = new HognoseIndexer('charredUtensil/hognose', './data');
+const indexer = new HognoseIndexer('charredUtensil/hognose', './output');
 
 // Default: Process latest release only, auto-replace on new release
 await indexer.indexHognose();
@@ -315,7 +315,7 @@ await indexer.indexHognose(undefined, { replaceExisting: false });
 You can manually clear all levels from a specific source:
 
 ```typescript
-const catalogManager = new CatalogManager('./data');
+const catalogManager = new CatalogManager('./output');
 await catalogManager.loadCatalogIndex();
 
 // Clear all Hognose levels

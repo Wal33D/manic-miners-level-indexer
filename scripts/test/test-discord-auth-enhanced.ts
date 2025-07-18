@@ -7,7 +7,7 @@ dotenv.config();
 async function testEnhancedAuth() {
   logger.info('=== Testing Enhanced Discord Authentication ===\n');
 
-  const auth = new DiscordAuth('./test-data/.auth');
+  const auth = new DiscordAuth('./test-output/.auth');
 
   try {
     // Test 1: Clear any existing cache

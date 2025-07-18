@@ -12,7 +12,7 @@ async function testAutoLogin() {
   delete process.env.DISCORD_USER_TOKEN;
   delete process.env.DISCORD_TOKEN;
 
-  const auth = new DiscordAuth('./test-data/.auth');
+  const auth = new DiscordAuth('./test-output/.auth');
 
   try {
     // Clear cache to force fresh login
