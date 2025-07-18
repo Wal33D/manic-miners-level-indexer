@@ -268,6 +268,7 @@ export class InternetArchiveIndexer extends EventEmitter {
         downloadCount: metadata.downloads,
         fileSize: metadata.item_size,
         tags: this.extractTags(metadata, details),
+        formatVersion: 'below-v1', // Archive.org levels are below v1
       };
 
       // Step 4: Download files immediately
@@ -296,24 +297,52 @@ export class InternetArchiveIndexer extends EventEmitter {
         downloadPromises.push(downloadPromise);
       }
 
-      // Download screenshots
-      const screenshots = this.findScreenshots(details.files);
-      for (const screenshot of screenshots.slice(0, 1)) {
-        const localPath = path.join(levelDir, 'screenshot_original.png');
+      // Download images (screenshots and thumbnails)
+      const images = this.categorizeImages(details.files);
+
+      // Download best screenshot
+      if (images.screenshots.length > 0) {
+        const screenshot = images.screenshots[0];
+        const ext = path.extname(screenshot.name).toLowerCase();
+        const localPath = path.join(levelDir, `screenshot${ext}`);
         const downloadUrl = `https://archive.org/download/${metadata.identifier}/${encodeURIComponent(screenshot.name)}`;
 
         const downloadPromise = this.downloadFile(downloadUrl, localPath)
           .then(() => {
             levelFiles.push({
-              filename: 'screenshot_original.png',
+              filename: `screenshot${ext}`,
               path: localPath,
               size: parseInt(screenshot.size || '0'),
-              type: 'screenshot',
+              type: 'other',
             });
+            logger.debug(`Downloaded screenshot: ${screenshot.name}`);
           })
           .catch(error => {
             logger.warn(`Failed to download screenshot: ${error}`);
-            // Don't throw for screenshot failures
+          });
+
+        downloadPromises.push(downloadPromise);
+      }
+
+      // Download best thumbnail
+      if (images.thumbnails.length > 0) {
+        const thumbnail = images.thumbnails[0];
+        const ext = path.extname(thumbnail.name).toLowerCase();
+        const localPath = path.join(levelDir, `thumb${ext}`);
+        const downloadUrl = `https://archive.org/download/${metadata.identifier}/${encodeURIComponent(thumbnail.name)}`;
+
+        const downloadPromise = this.downloadFile(downloadUrl, localPath)
+          .then(() => {
+            levelFiles.push({
+              filename: `thumb${ext}`,
+              path: localPath,
+              size: parseInt(thumbnail.size || '0'),
+              type: 'other',
+            });
+            logger.debug(`Downloaded thumbnail: ${thumbnail.name}`);
+          })
+          .catch(error => {
+            logger.warn(`Failed to download thumbnail: ${error}`);
           });
 
         downloadPromises.push(downloadPromise);
@@ -328,7 +357,6 @@ export class InternetArchiveIndexer extends EventEmitter {
         files: levelFiles,
         catalogPath: levelDir,
         datFilePath: levelFiles.find(f => f.type === 'dat')?.path || '',
-        screenshotPath: levelFiles.find(f => f.type === 'screenshot')?.path,
         indexed: new Date(),
         lastUpdated: new Date(),
       };
@@ -412,21 +440,80 @@ export class InternetArchiveIndexer extends EventEmitter {
     return Array.from(tags);
   }
 
+  private categorizeImages(files: ArchiveFile[]): {
+    screenshots: ArchiveFile[];
+    thumbnails: ArchiveFile[];
+  } {
+    const imageFiles = files.filter(file => {
+      const name = file.name.toLowerCase();
+      return name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg');
+    });
+
+    const screenshots: ArchiveFile[] = [];
+    const thumbnails: ArchiveFile[] = [];
+
+    // Categorize and score images
+    const scoredImages = imageFiles.map(file => {
+      const name = file.name.toLowerCase();
+      let score = 0;
+      let isThumb = false;
+
+      // Identify thumbnails
+      if (name.includes('_thumb') || name === '__ia_thumb.jpg') {
+        isThumb = true;
+        // Prefer non-IA thumbnails
+        if (name === '__ia_thumb.jpg') {
+          score = 1; // Lowest priority thumbnail
+        } else if (name.includes('_thumb.jpg')) {
+          score = 10; // Medium priority - level-specific thumbnail
+        }
+      } else {
+        // Screenshots/full images
+        if (name.includes('screenshot')) {
+          score = 100; // Highest priority
+        } else if (name.endsWith('.png')) {
+          score = 50; // PNG files are often the main level preview
+        } else if (name.includes('screen') || name.includes('preview')) {
+          score = 30;
+        } else {
+          score = 10; // Other images
+        }
+
+        // Prefer larger files for screenshots
+        const size = parseInt(file.size || '0');
+        if (size > 1000000) score += 10; // > 1MB
+      }
+
+      return { file, score, isThumb };
+    });
+
+    // Sort by score (highest first)
+    scoredImages.sort((a, b) => b.score - a.score);
+
+    // Separate into categories
+    for (const item of scoredImages) {
+      if (item.isThumb) {
+        thumbnails.push(item.file);
+      } else {
+        screenshots.push(item.file);
+      }
+    }
+
+    // If no thumbnails found but we have __ia_thumb.jpg, use it
+    if (thumbnails.length === 0) {
+      const iaThumb = files.find(f => f.name === '__ia_thumb.jpg');
+      if (iaThumb) {
+        thumbnails.push(iaThumb);
+      }
+    }
+
+    return { screenshots, thumbnails };
+  }
+
+  // Keep the old method for backward compatibility
   private findScreenshots(files: ArchiveFile[]): ArchiveFile[] {
-    return files
-      .filter(file => {
-        const name = file.name.toLowerCase();
-        return (
-          (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg')) &&
-          (name.includes('screenshot') || name.includes('screen') || name.includes('preview'))
-        );
-      })
-      .sort((a, b) => {
-        // Prioritize files with 'screenshot' in the name
-        const aScore = a.name.toLowerCase().includes('screenshot') ? 1 : 0;
-        const bScore = b.name.toLowerCase().includes('screenshot') ? 1 : 0;
-        return bScore - aScore;
-      });
+    const { screenshots } = this.categorizeImages(files);
+    return screenshots;
   }
 
   private async saveLevelData(level: Level): Promise<void> {

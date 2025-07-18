@@ -1,6 +1,5 @@
 import { Level, MapSource } from '../types';
 import { CatalogManager } from './catalogManager';
-import { MapRenderer } from '../renderer/mapRenderer';
 import { InternetArchiveIndexer } from '../indexers/archive/InternetArchiveIndexer';
 import { HognoseIndexer } from '../indexers/hognoseIndexer';
 import { DiscordIndexer } from '../indexers/discordIndexer';
@@ -14,7 +13,6 @@ import fs from 'fs-extra';
 export class MasterIndexer {
   private config: IndexerConfig;
   private catalogManager: CatalogManager;
-  private renderer: MapRenderer;
   private internetArchiveIndexer?: InternetArchiveIndexer;
   private hognoseIndexer?: HognoseIndexer;
   private discordIndexer?: DiscordIndexer;
@@ -22,11 +20,9 @@ export class MasterIndexer {
   constructor(config: IndexerConfig) {
     this.config = config;
     this.catalogManager = new CatalogManager(config.outputDir);
-    this.renderer = new MapRenderer(config.rendering);
 
     // Initialize indexers based on config
     if (config.sources.archive.enabled) {
-      // Always use V2 for better streaming performance
       this.internetArchiveIndexer = new InternetArchiveIndexer(
         config.sources.archive,
         config.outputDir
@@ -104,11 +100,6 @@ export class MasterIndexer {
       // Rebuild catalog index from all level directories
       await this.catalogManager.rebuildCatalogIndex();
 
-      // Render all levels if configured
-      if (this.config.generateScreenshots || this.config.generateThumbnails) {
-        await this.renderAllLevels();
-      }
-
       // Generate final master index
       await this.generateMasterIndex();
 
@@ -169,21 +160,6 @@ export class MasterIndexer {
       logger.success(`Source indexing completed for: ${source}`);
     } catch (error) {
       logger.error(`Source indexing failed for ${source}:`, error);
-      throw error;
-    }
-  }
-
-  async renderAllLevels(): Promise<void> {
-    try {
-      logger.info('Rendering all levels...');
-
-      await this.renderer.renderAllLevels(this.config.outputDir, (current, total, levelName) => {
-        logger.progress(`Rendering ${levelName}`, current, total);
-      });
-
-      logger.success('All levels rendered successfully');
-    } catch (error) {
-      logger.error('Failed to render all levels:', error);
       throw error;
     }
   }
