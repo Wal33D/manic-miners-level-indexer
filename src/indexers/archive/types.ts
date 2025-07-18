@@ -34,18 +34,9 @@ export interface ArchiveFile {
   original?: string;
 }
 
-export interface ArchiveReview {
-  reviewbody?: string;
-  reviewtitle?: string;
-  reviewer?: string;
-  reviewdate?: string;
-  stars?: string;
-}
-
 export interface ArchiveItemDetails {
   metadata: ArchiveMetadata;
   files: ArchiveFile[];
-  reviews?: ArchiveReview[];
   server?: string;
   uniq?: number;
   updated?: number;
