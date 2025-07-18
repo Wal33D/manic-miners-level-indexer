@@ -132,20 +132,6 @@ export class FileUtils {
     return crypto.createHash('sha256').update(url).digest('hex');
   }
 
-  static async createTempDir(): Promise<string> {
-    const tempDir = path.join(process.cwd(), 'temp', FileUtils.generateUniqueId());
-    await FileUtils.ensureDir(tempDir);
-    return tempDir;
-  }
-
-  static async cleanupTempDir(tempDir: string): Promise<void> {
-    try {
-      await fs.remove(tempDir);
-    } catch (error) {
-      logger.warn(`Failed to cleanup temp directory: ${tempDir}`, error);
-    }
-  }
-
   static async fileExists(filePath: string): Promise<boolean> {
     try {
       return await fs.pathExists(filePath);

@@ -78,10 +78,6 @@ export class ConfigManager {
     this.config.outputDir = dir;
   }
 
-  setTempDir(dir: string): void {
-    this.config.tempDir = dir;
-  }
-
   // Archive configuration
   setArchiveBaseUrl(baseUrl: string): void {
     this.config.sources.archive.baseUrl = baseUrl;
@@ -120,11 +116,6 @@ export class ConfigManager {
     // Validate output directory
     if (!this.config.outputDir || this.config.outputDir.trim() === '') {
       errors.push('Output directory is required');
-    }
-
-    // Validate temp directory
-    if (!this.config.tempDir || this.config.tempDir.trim() === '') {
-      errors.push('Temp directory is required');
     }
 
     // Validate archive source
@@ -190,7 +181,6 @@ export class ConfigManager {
 
     // Handle primitive properties
     if (updates.outputDir !== undefined) merged.outputDir = updates.outputDir;
-    if (updates.tempDir !== undefined) merged.tempDir = updates.tempDir;
 
     return merged;
   }
@@ -202,7 +192,6 @@ export class ConfigManager {
       // Add comments as properties (will be ignored by JSON.parse but useful for users)
       _comments: {
         outputDir: 'Directory where all indexed levels and catalogs will be stored',
-        tempDir: 'Temporary directory for processing files',
         sources: {
           archive: {
             enabled: 'Enable Internet Archive indexing',

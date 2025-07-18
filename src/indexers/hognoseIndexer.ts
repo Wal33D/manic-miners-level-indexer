@@ -13,6 +13,7 @@ import { FileUtils } from '../utils/fileUtils';
 import { getSourceLevelsDir } from '../utils/sourceUtils';
 import path from 'path';
 import fs from 'fs-extra';
+import { Readable } from 'stream';
 
 // GitHub API types
 interface GitHubAsset {
@@ -239,18 +240,15 @@ export class HognoseIndexer {
       }
 
       for (const zipAsset of zipAssets) {
-        const tempDir = await FileUtils.createTempDir();
-
         try {
-          // Download the ZIP file
-          const zipPath = path.join(tempDir, zipAsset.name);
-          await this.downloadFile(zipAsset.download_url, zipPath);
-
-          // Extract and process .dat files
-          const extractedLevels = await this.extractAndProcessZip(zipPath, release);
+          // Process ZIP file directly from URL stream
+          const extractedLevels = await this.extractAndProcessZipFromUrl(
+            zipAsset.download_url,
+            release
+          );
           levels.push(...extractedLevels);
-        } finally {
-          await FileUtils.cleanupTempDir(tempDir);
+        } catch (error) {
+          logger.error(`Failed to process ZIP asset ${zipAsset.name}:`, error);
         }
       }
 
@@ -261,57 +259,62 @@ export class HognoseIndexer {
     }
   }
 
-  private async extractAndProcessZip(zipPath: string, release: HognoseRelease): Promise<Level[]> {
+  private async extractAndProcessZipFromUrl(
+    url: string,
+    release: HognoseRelease
+  ): Promise<Level[]> {
     const levels: Level[] = [];
 
     try {
-      const tempExtractDir = await FileUtils.createTempDir();
-
-      // Extract ZIP file
-      await fs
-        .createReadStream(zipPath)
-        .pipe(unzipper.Extract({ path: tempExtractDir }))
-        .promise();
-
-      // Find all .dat files in the extracted directory
-      const datFiles = await this.findDatFiles(tempExtractDir);
-
-      for (const datFile of datFiles) {
-        const level = await this.createLevelFromDatFile(datFile, release);
-        if (level) {
-          levels.push(level);
-        }
+      // Fetch the ZIP file as a stream
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      await FileUtils.cleanupTempDir(tempExtractDir);
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
+
+      // Process ZIP entries directly from the stream
+      const zipStream = Readable.from(response.body).pipe(unzipper.Parse());
+
+      await new Promise<void>((resolve, reject) => {
+        zipStream.on('entry', async (entry: unzipper.Entry) => {
+          const fileName = entry.path;
+          const type = entry.type; // 'Directory' or 'File'
+
+          if (type === 'File' && fileName.toLowerCase().endsWith('.dat')) {
+            try {
+              // Process .dat file directly from the ZIP stream
+              const level = await this.createLevelFromStream(fileName, entry, release);
+              if (level) {
+                levels.push(level);
+              }
+            } catch (error) {
+              logger.error(`Failed to process ${fileName} from ZIP:`, error);
+              entry.autodrain();
+            }
+          } else {
+            // Skip non-.dat files
+            entry.autodrain();
+          }
+        });
+
+        zipStream.on('finish', resolve);
+        zipStream.on('error', reject);
+      });
+
       return levels;
     } catch (error) {
-      logger.error(`Failed to extract ZIP file ${zipPath}:`, error);
+      logger.error(`Failed to extract ZIP from URL ${url}:`, error);
       return levels;
     }
   }
 
-  private async findDatFiles(dir: string): Promise<string[]> {
-    const datFiles: string[] = [];
-
-    const items = await fs.readdir(dir);
-    for (const item of items) {
-      const itemPath = path.join(dir, item);
-      const stat = await fs.stat(itemPath);
-
-      if (stat.isDirectory()) {
-        const subDatFiles = await this.findDatFiles(itemPath);
-        datFiles.push(...subDatFiles);
-      } else if (item.toLowerCase().endsWith('.dat')) {
-        datFiles.push(itemPath);
-      }
-    }
-
-    return datFiles;
-  }
-
-  private async createLevelFromDatFile(
-    datFilePath: string,
+  private async createLevelFromStream(
+    fileName: string,
+    entry: unzipper.Entry,
     release: HognoseRelease
   ): Promise<Level | null> {
     try {
@@ -319,11 +322,17 @@ export class HognoseIndexer {
       const levelDir = path.join(this.outputDir, getSourceLevelsDir(MapSource.HOGNOSE), levelId);
       await FileUtils.ensureDir(levelDir);
 
-      const datFileName = path.basename(datFilePath);
+      const datFileName = path.basename(fileName);
       const localDatPath = path.join(levelDir, datFileName);
 
-      // Copy .dat file to level directory
-      await FileUtils.copyFile(datFilePath, localDatPath);
+      // Stream the .dat file directly to disk
+      const writeStream = fs.createWriteStream(localDatPath);
+      await new Promise<void>((resolve, reject) => {
+        entry.pipe(writeStream);
+        writeStream.on('finish', resolve);
+        writeStream.on('error', reject);
+        entry.on('error', reject);
+      });
 
       // Extract level name from filename (remove .dat extension)
       const levelName = path.basename(datFileName, '.dat');
@@ -362,35 +371,8 @@ export class HognoseIndexer {
 
       return level;
     } catch (error) {
-      logger.error(`Failed to create level from .dat file ${datFilePath}:`, error);
+      logger.error(`Failed to create level from stream ${fileName}:`, error);
       return null;
-    }
-  }
-
-  private async downloadFile(url: string, filePath: string): Promise<void> {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    if (response.body) {
-      const fileStream = fs.createWriteStream(filePath);
-      await new Promise<void>((resolve, reject) => {
-        if (!response.body) {
-          reject(new Error('Response body is null'));
-          return;
-        }
-        response.body.pipe(fileStream);
-        response.body.on('error', reject);
-        fileStream.on('finish', () => {
-          fileStream.close();
-          resolve();
-        });
-        fileStream.on('error', error => {
-          fileStream.close();
-          reject(error);
-        });
-      });
     }
   }
 

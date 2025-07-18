@@ -50,7 +50,6 @@ export interface CatalogIndex {
 
 export interface IndexerConfig {
   outputDir: string;
-  tempDir: string;
   sources: {
     archive: {
       enabled: boolean;

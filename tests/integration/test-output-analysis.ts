@@ -17,7 +17,6 @@ async function testOutputAnalysis() {
 
   const config: IndexerConfig = {
     outputDir,
-    tempDir: path.join(TestPaths.temp.integration, 'output-analysis'),
     sources: {
       archive: {
         enabled: true,

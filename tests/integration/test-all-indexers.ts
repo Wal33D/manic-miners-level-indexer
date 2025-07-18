@@ -7,7 +7,6 @@ import { TestPaths } from '../../src/tests/test-config';
 async function testAllIndexers() {
   const config: IndexerConfig = {
     outputDir: TestPaths.integration.all,
-    tempDir: TestPaths.temp.integration,
     sources: {
       archive: {
         enabled: true,
@@ -26,9 +25,7 @@ async function testAllIndexers() {
 
   // Clean up previous test output
   await fs.remove(config.outputDir);
-  await fs.remove(config.tempDir);
   await fs.ensureDir(config.outputDir);
-  await fs.ensureDir(config.tempDir);
 
   logger.info('Starting test of all indexers...');
   logger.info('Output directory:', config.outputDir);

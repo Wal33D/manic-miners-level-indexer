@@ -37,7 +37,6 @@ cp config.template.json config.json
 
 2. Edit `config.json` to customize your settings:
 - `outputDir`: Where indexed levels will be stored (default: `./data`)
-- `tempDir`: Temporary directory for processing (default: `./temp`)
 - Discord channels: Update with your target forum channels
 - Archive settings: Adjust search parameters as needed
 
@@ -89,7 +88,6 @@ The system uses a JSON configuration file with the following structure:
 ```json
 {
   "outputDir": "./data",
-  "tempDir": "./temp",
   "sources": {
     "archive": {
       "enabled": true,

@@ -205,8 +205,6 @@ export class MasterIndexer {
     for (const sourceDir of sourceDirs) {
       await FileUtils.ensureDir(path.join(this.config.outputDir, sourceDir));
     }
-
-    await FileUtils.ensureDir(this.config.tempDir);
   }
 
   private async getTopAuthors(): Promise<{ author: string; count: number }[]> {

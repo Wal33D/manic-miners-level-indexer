@@ -1,6 +1,5 @@
 {
   "outputDir": "./data",
-  "tempDir": "./temp",
   "sources": {
     "archive": {
       "enabled": true,
