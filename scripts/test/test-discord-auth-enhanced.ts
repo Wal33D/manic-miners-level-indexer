@@ -1,5 +1,5 @@
-import { DiscordAuth } from '../src/auth/discordAuth';
-import { logger } from '../src/utils/logger';
+import { DiscordAuth } from '../../src/auth/discordAuth';
+import { logger } from '../../src/utils/logger';
 import dotenv from 'dotenv';
 
 dotenv.config();

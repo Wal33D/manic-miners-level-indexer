@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
-import { DiscordUnifiedIndexer } from '../src/indexers/discordUnified';
-import { logger } from '../src/utils/logger';
-import { FileUtils } from '../src/utils/fileUtils';
-import { Level } from '../src/types';
+import { DiscordUnifiedIndexer } from '../../src/indexers/discordUnified';
+import { logger } from '../../src/utils/logger';
+import { FileUtils } from '../../src/utils/fileUtils';
+import { Level } from '../../src/types';
 import path from 'path';
 import fs from 'fs-extra';
 

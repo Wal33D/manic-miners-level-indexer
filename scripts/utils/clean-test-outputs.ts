@@ -2,8 +2,8 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import { logger } from '../src/utils/logger';
-import { TestPaths } from '../src/tests/test-config';
+import { logger } from '../../src/utils/logger';
+import { TestPaths } from '../../src/tests/test-config';
 
 async function cleanTestOutputs(includeProduction = false) {
   const mode = includeProduction ? 'all output' : 'test output';

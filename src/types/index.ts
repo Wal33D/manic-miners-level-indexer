@@ -99,30 +99,6 @@ export interface IndexerResult {
   duration: number;
 }
 
-export interface Biome {
-  id: number;
-  name: string;
-  color: string;
-  texture?: string;
-}
-
-export interface TileData {
-  x: number;
-  y: number;
-  biome: number;
-  height: number;
-  special?: string;
-}
-
-export interface MapData {
-  width: number;
-  height: number;
-  tiles: TileData[][];
-  biomes: Biome[];
-  objectives: string[];
-  requirements: string[];
-}
-
 export interface HognoseRelease {
   id: number;
   tag_name: string;
@@ -146,18 +122,5 @@ export interface DiscordMessage {
     filename: string;
     url: string;
     size: number;
-  }[];
-}
-
-export interface ArchiveItem {
-  identifier: string;
-  title: string;
-  creator: string;
-  date: string;
-  description: string;
-  files: {
-    name: string;
-    size: string;
-    format: string;
   }[];
 }

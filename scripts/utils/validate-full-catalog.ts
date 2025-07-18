@@ -1,7 +1,7 @@
-import { OutputValidator } from '../src/tests/outputValidator';
-import { AnalysisReporter } from '../src/tests/analysisReporter';
-import { MapSource } from '../src/types';
-import { logger } from '../src/utils/logger';
+import { OutputValidator } from '../../src/tests/outputValidator';
+import { AnalysisReporter } from '../../src/tests/analysisReporter';
+import { MapSource } from '../../src/types';
+import { logger } from '../../src/utils/logger';
 import fs from 'fs-extra';
 import path from 'path';
 

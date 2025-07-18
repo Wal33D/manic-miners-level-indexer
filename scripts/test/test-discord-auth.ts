@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
-import { DiscordAuth } from '../src/auth/discordAuth';
-import { logger } from '../src/utils/logger';
+import { DiscordAuth } from '../../src/auth/discordAuth';
+import { logger } from '../../src/utils/logger';
 import chalk from 'chalk';
 
 dotenv.config();

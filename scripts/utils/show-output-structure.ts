@@ -2,8 +2,8 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import { logger } from '../src/utils/logger';
-import { getAllSourceLevelsDirs } from '../src/utils/sourceUtils';
+import { logger } from '../../src/utils/logger';
+import { getAllSourceLevelsDirs } from '../../src/utils/sourceUtils';
 
 async function showOutputStructure() {
   const outputDir = './data';

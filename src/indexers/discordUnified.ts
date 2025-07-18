@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import {
   DiscordMessage,
   Level,
+  LevelFile,
   LevelMetadata,
   MapSource,
   IndexerResult,
@@ -343,12 +344,13 @@ export class DiscordUnifiedIndexer {
         );
 
         if (datAttachments.length > 0) {
+          // Include all attachments (dat files and potential images)
           messages.push({
             id: msg.id,
             author: msg.author.username,
             content: msg.content,
             timestamp: msg.timestamp,
-            attachments: datAttachments.map(att => ({
+            attachments: msg.attachments.map(att => ({
               filename: att.filename,
               url: att.url,
               size: att.size,
@@ -403,12 +405,13 @@ export class DiscordUnifiedIndexer {
           );
 
           if (datAttachments.length > 0) {
+            // Include all attachments (dat files and potential images)
             messages.push({
               id: msg.id,
               author: msg.author.username,
               content: msg.content,
               timestamp: msg.timestamp,
-              attachments: datAttachments.map(att => ({
+              attachments: msg.attachments.map(att => ({
                 filename: att.filename,
                 url: att.url,
                 size: att.size,
@@ -435,19 +438,35 @@ export class DiscordUnifiedIndexer {
     const levels: Level[] = [];
 
     try {
-      for (const attachment of message.attachments) {
+      // Separate .dat files from images
+      const datAttachments = message.attachments.filter(att =>
+        att.filename.toLowerCase().endsWith('.dat')
+      );
+      const imageAttachments = message.attachments.filter(att => this.isImageFile(att.filename));
+
+      // Process each .dat file as a level
+      for (const datAttachment of datAttachments) {
         // Check if we've already processed this file
-        const fileHash = await FileUtils.getUrlHash(attachment.url);
+        const fileHash = await FileUtils.getUrlHash(datAttachment.url);
         const existingLevelId = this.processedHashes.get(fileHash);
 
         if (existingLevelId) {
           logger.info(
-            `Skipping duplicate file ${attachment.filename} (already processed as ${existingLevelId})`
+            `Skipping duplicate file ${datAttachment.filename} (already processed as ${existingLevelId})`
           );
           continue;
         }
 
-        const level = await this.createLevelFromDiscordAttachment(attachment, message, channelId);
+        // Find associated images (images in the same message)
+        const associatedImages = imageAttachments;
+
+        const level = await this.createLevelFromDiscordAttachment(
+          datAttachment,
+          associatedImages,
+          message,
+          channelId
+        );
+
         if (level) {
           levels.push(level);
           // Store the hash to avoid duplicates
@@ -462,12 +481,23 @@ export class DiscordUnifiedIndexer {
     }
   }
 
+  private isImageFile(filename: string): boolean {
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'];
+    const lowerFilename = filename.toLowerCase();
+    return imageExtensions.some(ext => lowerFilename.endsWith(ext));
+  }
+
   private async createLevelFromDiscordAttachment(
-    attachment: {
+    datAttachment: {
       filename: string;
       url: string;
       size: number;
     },
+    imageAttachments: Array<{
+      filename: string;
+      url: string;
+      size: number;
+    }>,
     message: DiscordMessage,
     channelId: string
   ): Promise<Level | null> {
@@ -476,11 +506,11 @@ export class DiscordUnifiedIndexer {
       const levelDir = path.join(this.outputDir, getSourceLevelsDir(MapSource.DISCORD), levelId);
       await FileUtils.ensureDir(levelDir);
 
-      const datFileName = FileUtils.sanitizeFilename(attachment.filename);
+      const datFileName = FileUtils.sanitizeFilename(datAttachment.filename);
       const localDatPath = path.join(levelDir, datFileName);
 
       // Download the .dat file
-      await this.downloadFile(attachment.url, localDatPath);
+      await this.downloadFile(datAttachment.url, localDatPath);
 
       // Extract level name from filename (remove .dat extension)
       const levelName = path.basename(datFileName, '.dat');
@@ -498,7 +528,7 @@ export class DiscordUnifiedIndexer {
         formatVersion: 'below-v1', // Discord levels are typically below v1
       };
 
-      const levelFiles = [
+      const levelFiles: LevelFile[] = [
         {
           filename: datFileName,
           path: localDatPath,
@@ -507,6 +537,37 @@ export class DiscordUnifiedIndexer {
           type: 'dat' as const,
         },
       ];
+
+      // Download associated images
+      for (const imageAttachment of imageAttachments) {
+        try {
+          const imageFileName = FileUtils.sanitizeFilename(imageAttachment.filename);
+          const localImagePath = path.join(levelDir, imageFileName);
+
+          logger.info(`Downloading image: ${imageFileName} for level ${levelName}`);
+          await this.downloadFile(imageAttachment.url, localImagePath);
+
+          // Determine image type
+          const imageType =
+            imageFileName.toLowerCase().includes('thumb') ||
+            imageFileName.toLowerCase().includes('preview')
+              ? 'thumbnail'
+              : 'image';
+
+          levelFiles.push({
+            filename: imageFileName,
+            path: localImagePath,
+            size: await FileUtils.getFileSize(localImagePath),
+            hash: await FileUtils.getFileHash(localImagePath),
+            type: imageType as 'image' | 'thumbnail',
+          });
+
+          logger.info(`Downloaded image: ${imageFileName} (${imageType})`);
+        } catch (error) {
+          logger.warn(`Failed to download image ${imageAttachment.filename}: ${error}`);
+          // Continue processing even if image download fails
+        }
+      }
 
       const level: Level = {
         metadata,
@@ -519,7 +580,10 @@ export class DiscordUnifiedIndexer {
 
       return level;
     } catch (error) {
-      logger.error(`Failed to create level from Discord attachment ${attachment.filename}:`, error);
+      logger.error(
+        `Failed to create level from Discord attachment ${datAttachment.filename}:`,
+        error
+      );
       return null;
     }
   }

@@ -1,10 +1,10 @@
 import dotenv from 'dotenv';
-import { CatalogManager } from '../src/catalog/catalogManager';
-import { MapSource } from '../src/types';
-import { logger } from '../src/utils/logger';
-import { FileUtils } from '../src/utils/fileUtils';
-import { getSourceLevelsDir } from '../src/utils/sourceUtils';
-import { CATALOG_FILENAMES } from '../src/config/default';
+import { CatalogManager } from '../../src/catalog/catalogManager';
+import { MapSource } from '../../src/types';
+import { logger } from '../../src/utils/logger';
+import { FileUtils } from '../../src/utils/fileUtils';
+import { getSourceLevelsDir } from '../../src/utils/sourceUtils';
+import { CATALOG_FILENAMES } from '../../src/config/default';
 import path from 'path';
 
 dotenv.config();

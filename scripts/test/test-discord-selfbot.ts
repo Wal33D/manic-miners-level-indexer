@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { Client } from 'discord.js-selfbot-v13';
-import { logger } from '../src/utils/logger';
+import { logger } from '../../src/utils/logger';
 
 dotenv.config();
 

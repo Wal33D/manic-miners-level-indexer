@@ -1,5 +1,5 @@
-import { InternetArchiveIndexer } from '../src/indexers/archive/InternetArchiveIndexer';
-import { logger } from '../src/utils/logger';
+import { InternetArchiveIndexer } from '../../src/indexers/archive/InternetArchiveIndexer';
+import { logger } from '../../src/utils/logger';
 import path from 'path';
 import fs from 'fs-extra';
 
