@@ -3,6 +3,10 @@ import { IndexerConfig } from '../../src/types';
 import { logger } from '../../src/utils/logger';
 import fs from 'fs-extra';
 import { TestPaths } from '../../src/tests/test-config';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 async function testAllIndexers() {
   const config: IndexerConfig = {

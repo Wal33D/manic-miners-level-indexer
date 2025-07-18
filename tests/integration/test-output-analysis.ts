@@ -6,6 +6,10 @@ import { AnalysisReporter } from '../../src/tests/analysisReporter';
 import fs from 'fs-extra';
 import path from 'path';
 import { TestPaths } from '../../src/tests/test-config';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 /**
  * Comprehensive output analysis test that runs all indexers with limited data

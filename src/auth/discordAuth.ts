@@ -54,14 +54,22 @@ export class DiscordAuth {
   async getToken(options?: { token?: string; tokenFile?: string }): Promise<AuthResult> {
     // Try to get cached token first
     const cached = await this.getCachedToken();
-    if (cached && (await this.isTokenValid(cached))) {
-      logger.info('Using cached Discord token');
-      return {
-        token: cached.token,
-        userId: cached.userId,
-        username: cached.username,
-        expiresAt: cached.expiresAt ? new Date(cached.expiresAt) : undefined,
-      };
+    if (cached) {
+      logger.debug(`Found cached token for user: ${cached.username || 'unknown'}`);
+      const isValid = await this.isTokenValid(cached);
+      if (isValid) {
+        logger.info('Using cached Discord token');
+        return {
+          token: cached.token,
+          userId: cached.userId,
+          username: cached.username,
+          expiresAt: cached.expiresAt ? new Date(cached.expiresAt) : undefined,
+        };
+      } else {
+        logger.warn('Cached token is invalid or expired');
+      }
+    } else {
+      logger.debug('No cached token found');
     }
 
     // Try to get token from various sources
@@ -152,8 +160,28 @@ export class DiscordAuth {
           'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
         },
       });
-      return response.ok;
+      
+      if (!response.ok) {
+        logger.warn(`Token validation failed with status: ${response.status}`);
+        return false;
+      }
+      
+      // Update cached user info while we're validating
+      try {
+        const user = await response.json();
+        const cached = await this.getCachedToken();
+        if (cached && cached.token === token) {
+          cached.userId = user.id;
+          cached.username = user.username;
+          await fs.writeFile(this.cacheFile, JSON.stringify(cached, null, 2));
+        }
+      } catch (error) {
+        // Ignore errors updating cache
+      }
+      
+      return true;
     } catch (error) {
+      logger.error('Token validation error:', error);
       return false;
     }
   }
