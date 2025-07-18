@@ -22,10 +22,3 @@ export function getSourceLevelsDir(source: MapSource): string {
 export function getAllSourceLevelsDirs(): string[] {
   return Object.values(MapSource).map(source => getSourceLevelsDir(source));
 }
-
-/**
- * Get the catalog filename for a specific source
- */
-export function getSourceCatalogFilename(source: MapSource): string {
-  return `catalog-${source}.json`;
-}

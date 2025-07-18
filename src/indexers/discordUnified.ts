@@ -54,6 +54,7 @@ export class DiscordUnifiedIndexer {
   private processedHashes: Map<string, string> = new Map();
   private headers: Record<string, string> = {};
   private discordAuth: DiscordAuth;
+  private messageCache: Map<string, DiscordMessage> = new Map(); // Cache for associating images
 
   constructor(channels: string[], outputDir: string) {
     this.channels = channels;
@@ -179,6 +180,9 @@ export class DiscordUnifiedIndexer {
             message: `Processing message ${i + 1}/${channelMessages.length}...`,
           });
         }
+
+        // Clear message cache after processing each channel to save memory
+        this.messageCache.clear();
       }
 
       await this.saveProcessedMessages();
@@ -337,25 +341,30 @@ export class DiscordUnifiedIndexer {
       totalFetched += channelMessages.length;
       logger.info(`Fetched ${channelMessages.length} messages (total: ${totalFetched})`);
 
-      // Process messages for .dat attachments
+      // Process messages and cache them
       for (const msg of channelMessages) {
+        const message: DiscordMessage = {
+          id: msg.id,
+          author: msg.author.username,
+          content: msg.content,
+          timestamp: msg.timestamp,
+          channelId,
+          attachments: msg.attachments.map(att => ({
+            filename: att.filename,
+            url: att.url,
+            size: att.size,
+          })),
+        };
+
+        // Cache all messages for association
+        this.messageCache.set(msg.id, message);
+
         const datAttachments = msg.attachments.filter(att =>
           att.filename.toLowerCase().endsWith('.dat')
         );
 
         if (datAttachments.length > 0) {
-          // Include all attachments (dat files and potential images)
-          messages.push({
-            id: msg.id,
-            author: msg.author.username,
-            content: msg.content,
-            timestamp: msg.timestamp,
-            attachments: msg.attachments.map(att => ({
-              filename: att.filename,
-              url: att.url,
-              size: att.size,
-            })),
-          });
+          messages.push(message);
         }
       }
 
@@ -398,25 +407,30 @@ export class DiscordUnifiedIndexer {
           break;
         }
 
-        // Process messages for .dat attachments
+        // Process messages and cache them
         for (const msg of threadMessages) {
+          const message: DiscordMessage = {
+            id: msg.id,
+            author: msg.author.username,
+            content: msg.content,
+            timestamp: msg.timestamp,
+            channelId: threadId,
+            attachments: msg.attachments.map(att => ({
+              filename: att.filename,
+              url: att.url,
+              size: att.size,
+            })),
+          };
+
+          // Cache all messages for association
+          this.messageCache.set(msg.id, message);
+
           const datAttachments = msg.attachments.filter(att =>
             att.filename.toLowerCase().endsWith('.dat')
           );
 
           if (datAttachments.length > 0) {
-            // Include all attachments (dat files and potential images)
-            messages.push({
-              id: msg.id,
-              author: msg.author.username,
-              content: msg.content,
-              timestamp: msg.timestamp,
-              attachments: msg.attachments.map(att => ({
-                filename: att.filename,
-                url: att.url,
-                size: att.size,
-              })),
-            });
+            messages.push(message);
           }
         }
 
@@ -438,11 +452,10 @@ export class DiscordUnifiedIndexer {
     const levels: Level[] = [];
 
     try {
-      // Separate .dat files from images
+      // Separate .dat files
       const datAttachments = message.attachments.filter(att =>
         att.filename.toLowerCase().endsWith('.dat')
       );
-      const imageAttachments = message.attachments.filter(att => this.isImageFile(att.filename));
 
       // Process each .dat file as a level
       for (const datAttachment of datAttachments) {
@@ -457,8 +470,14 @@ export class DiscordUnifiedIndexer {
           continue;
         }
 
-        // Find associated images (images in the same message)
-        const associatedImages = imageAttachments;
+        // Find associated images (from same message and nearby messages)
+        const associatedImages = this.findAssociatedImages(message);
+
+        if (associatedImages.length > 0) {
+          logger.info(
+            `Found ${associatedImages.length} associated image(s) for ${datAttachment.filename}`
+          );
+        }
 
         const level = await this.createLevelFromDiscordAttachment(
           datAttachment,
@@ -485,6 +504,53 @@ export class DiscordUnifiedIndexer {
     const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'];
     const lowerFilename = filename.toLowerCase();
     return imageExtensions.some(ext => lowerFilename.endsWith(ext));
+  }
+
+  private findAssociatedImages(message: DiscordMessage): Array<{
+    filename: string;
+    url: string;
+    size: number;
+  }> {
+    const associatedImages: Array<{ filename: string; url: string; size: number }> = [];
+
+    // First, get images from the same message
+    const sameMessageImages = message.attachments.filter(att => this.isImageFile(att.filename));
+    associatedImages.push(...sameMessageImages);
+
+    // Look for images in nearby messages (within 5 minutes before and after)
+    const messageTime = new Date(message.timestamp).getTime();
+    const timeWindow = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+    // Get all cached messages from the same channel
+    const channelMessages = Array.from(this.messageCache.values()).filter(
+      msg => msg.channelId === message.channelId
+    );
+
+    // Sort by timestamp
+    channelMessages.sort(
+      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    // Find nearby messages from the same author
+    for (const msg of channelMessages) {
+      const msgTime = new Date(msg.timestamp).getTime();
+      const timeDiff = Math.abs(msgTime - messageTime);
+
+      // Check if message is within time window and from same author
+      if (timeDiff <= timeWindow && msg.author === message.author && msg.id !== message.id) {
+        const images = msg.attachments.filter(att => this.isImageFile(att.filename));
+
+        // Add images that aren't already included
+        for (const img of images) {
+          if (!associatedImages.some(existing => existing.url === img.url)) {
+            associatedImages.push(img);
+            logger.info(`Found associated image ${img.filename} from nearby message ${msg.id}`);
+          }
+        }
+      }
+    }
+
+    return associatedImages;
   }
 
   private async createLevelFromDiscordAttachment(
