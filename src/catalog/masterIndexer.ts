@@ -2,7 +2,7 @@ import { Level, MapSource } from '../types';
 import { CatalogManager } from './catalogManager';
 import { InternetArchiveIndexer } from '../indexers/archive/InternetArchiveIndexer';
 import { HognoseIndexer } from '../indexers/hognoseIndexer';
-import { DiscordIndexer } from '../indexers/discordIndexer';
+import { DiscordUnifiedIndexer } from '../indexers/discordUnified';
 import { logger } from '../utils/logger';
 import { FileUtils } from '../utils/fileUtils';
 import { getAllSourceLevelsDirs } from '../utils/sourceUtils';
@@ -15,7 +15,7 @@ export class MasterIndexer {
   private catalogManager: CatalogManager;
   private internetArchiveIndexer?: InternetArchiveIndexer;
   private hognoseIndexer?: HognoseIndexer;
-  private discordIndexer?: DiscordIndexer;
+  private discordIndexer?: DiscordUnifiedIndexer;
 
   constructor(config: IndexerConfig) {
     this.config = config;
@@ -34,7 +34,10 @@ export class MasterIndexer {
     }
 
     if (config.sources.discord.enabled) {
-      this.discordIndexer = new DiscordIndexer(config.sources.discord.channels, config.outputDir);
+      this.discordIndexer = new DiscordUnifiedIndexer(
+        config.sources.discord.channels,
+        config.outputDir
+      );
     }
   }
 

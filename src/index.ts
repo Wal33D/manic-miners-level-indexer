@@ -1,7 +1,9 @@
 import { MasterIndexer } from './catalog/masterIndexer';
 import { InternetArchiveIndexer } from './indexers/archive';
 import { HognoseIndexer } from './indexers/hognoseIndexer';
-import { DiscordIndexer } from './indexers/discordIndexer';
+import { DiscordUnifiedIndexer } from './indexers/discordUnified';
+import { DiscordDirectAPI } from './indexers/discordDirectAPI';
+import { DiscordAuth } from './auth/discordAuth';
 import { CatalogManager } from './catalog/catalogManager';
 import { logger } from './utils/logger';
 
@@ -10,7 +12,10 @@ export {
   MasterIndexer,
   InternetArchiveIndexer as ArchiveIndexer,
   HognoseIndexer,
-  DiscordIndexer,
+  DiscordUnifiedIndexer,
+  DiscordUnifiedIndexer as DiscordIndexer, // Alias for backward compatibility
+  DiscordDirectAPI,
+  DiscordAuth,
   CatalogManager,
   logger,
 };

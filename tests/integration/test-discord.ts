@@ -1,4 +1,4 @@
-import { DiscordIndexer } from '../../src/indexers/discordIndexer';
+import { DiscordUnifiedIndexer } from '../../src/indexers/discordUnified';
 import { logger } from '../../src/utils/logger';
 import fs from 'fs-extra';
 import path from 'path';
@@ -12,7 +12,7 @@ dotenv.config();
 
 async function testDiscordIndexer() {
   const outputDir = TestPaths.integration.discord;
-  const channels = ['https://discord.com/channels/580269696369164299/1139908458968252457'];
+  const channels = ['1139908458968252457']; // Use channel ID instead of full URL
 
   // Clean up previous test output
   await fs.remove(outputDir);
@@ -22,7 +22,7 @@ async function testDiscordIndexer() {
   logger.info('Output directory:', outputDir);
   logger.info('Channels to index:', channels);
 
-  const indexer = new DiscordIndexer(channels, outputDir);
+  const indexer = new DiscordUnifiedIndexer(channels, outputDir);
 
   const startTime = Date.now();
 

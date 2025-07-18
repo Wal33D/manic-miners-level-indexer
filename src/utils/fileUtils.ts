@@ -128,6 +128,10 @@ export class FileUtils {
     return crypto.randomUUID();
   }
 
+  static getUrlHash(url: string): string {
+    return crypto.createHash('sha256').update(url).digest('hex');
+  }
+
   static async createTempDir(): Promise<string> {
     const tempDir = path.join(process.cwd(), 'temp', FileUtils.generateUniqueId());
     await FileUtils.ensureDir(tempDir);

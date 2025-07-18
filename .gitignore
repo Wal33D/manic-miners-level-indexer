@@ -27,6 +27,8 @@ config.*.json
 output/
 temp/
 test-output/
+test-data/
+data/
 levels/
 levels-archive/
 levels-discord/
@@ -95,9 +97,16 @@ discord-debug.png
 
 # Processed data files
 discord_processed.json
+discord_hashes.json
+discord_processed_hashes.json
+discord_direct_processed.json
 catalog_index.json
 master_index.json
 hognose_processed.json
+
+# Authentication cache
+.auth/
+**/discord-token.json
 
 # Claude files (workspace)
 .claude/
