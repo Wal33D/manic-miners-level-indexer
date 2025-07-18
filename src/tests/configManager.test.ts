@@ -63,12 +63,10 @@ describe('ConfigManager', () => {
 
       configManager.updateConfig({
         outputDir: '/new/output',
-        generateThumbnails: false,
       });
 
       const config = configManager.getConfig();
       expect(config.outputDir).toBe('/new/output');
-      expect(config.generateThumbnails).toBe(false);
     });
   });
 

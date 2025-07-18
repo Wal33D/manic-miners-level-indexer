@@ -879,6 +879,7 @@ export class DiscordIndexer {
         sourceUrl: `https://discord.com/channels/${message.id}`,
         originalId: message.id,
         tags: ['discord', 'community'],
+        formatVersion: 'below-v1', // Discord levels are below v1
       };
 
       const levelFiles = [

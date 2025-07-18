@@ -7,7 +7,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 [![GitHub](https://img.shields.io/badge/GitHub-Wal33D%2Fmanic--miners--level--indexer-blue)](https://github.com/Wal33D/manic-miners-level-indexer)
 
-A unified indexing system for Manic Miners levels that combines archive scraping, Hognose indexing, map rendering, and catalog management into a single, powerful tool.
+A unified indexing system for Manic Miners levels that combines archive scraping, Hognose indexing, and catalog management into a single, powerful tool.
 
 ## Features
 
@@ -15,7 +15,6 @@ A unified indexing system for Manic Miners levels that combines archive scraping
   - Internet Archive collections
   - Discord community channels
   - Hognose GitHub releases
-- **Visual Processing**: Generates thumbnails and screenshots from .dat files
 - **Catalog Management**: Organizes levels with searchable metadata
 - **Master Index**: Creates searchable indexes for efficient level discovery
 - **Script-based Operations**: Simple npm scripts for all indexing operations
@@ -37,7 +36,7 @@ cp config.template.json config.json
 ```
 
 2. Edit `config.json` to customize your settings:
-- `outputDir`: Where indexed levels will be stored (default: `./output`)
+- `outputDir`: Where indexed levels will be stored (default: `./data`)
 - `tempDir`: Temporary directory for processing (default: `./temp`)
 - Discord channels: Update with your target forum channels
 - Archive settings: Adjust search parameters as needed
@@ -72,7 +71,6 @@ npm run verify:hognose   # Verify complete Hognose indexing
 ### Core Components
 
 - **Indexers**: Scrape and process levels from different sources
-- **Renderer**: Generates visual representations of levels
 - **Catalog Manager**: Organizes and manages level metadata
 - **Master Indexer**: Coordinates all operations and builds searchable indexes
 - **Scripts**: Dedicated scripts for each indexing operation
@@ -81,9 +79,8 @@ npm run verify:hognose   # Verify complete Hognose indexing
 
 1. **Scraping**: Indexers collect level data from various sources
 2. **Processing**: .dat files are downloaded and processed
-3. **Rendering**: Thumbnails and screenshots are generated
-4. **Cataloging**: Metadata is organized and stored
-5. **Indexing**: Master index is built for efficient searching
+3. **Cataloging**: Metadata is organized and stored
+4. **Indexing**: Master index is built for efficient searching
 
 ## Configuration
 
@@ -91,10 +88,8 @@ The system uses a JSON configuration file with the following structure:
 
 ```json
 {
-  "outputDir": "./output",
+  "outputDir": "./data",
   "tempDir": "./temp",
-  "generateThumbnails": true,
-  "generateScreenshots": true,
   "sources": {
     "archive": {
       "enabled": true,
@@ -109,11 +104,6 @@ The system uses a JSON configuration file with the following structure:
       "githubRepo": "charredUtensil/hognose",
       "checkInterval": 86400000
     }
-  },
-  "rendering": {
-    "thumbnailSize": { "width": 200, "height": 200 },
-    "screenshotSize": { "width": 800, "height": 600 },
-    "biomeColors": { ... }
   }
 }
 ```
@@ -185,18 +175,28 @@ npm start
 ## Output Structure
 
 ```
-output/
-├── levels/
+data/
+├── levels-discord/
 │   ├── {level-id}/
 │   │   ├── catalog.json
-│   │   ├── level.dat
-│   │   ├── thumbnail.png
-│   │   └── screenshot.png
+│   │   └── {level-name}.dat
+│   └── ...
+├── levels-archive/
+│   ├── {level-id}/
+│   │   ├── catalog.json
+│   │   └── {level-name}.dat
+│   └── ...
+├── levels-hognose/
+│   ├── {level-id}/
+│   │   ├── catalog.json
+│   │   └── {level-name}.dat
 │   └── ...
 ├── catalog_index.json
+├── catalog_export.json
+├── catalog_export.csv
 ├── master_index.json
-├── discord_processed.json
-└── hognose_processed.json
+├── discord_direct_processed.json
+└── discord_processed_hashes.json
 
 test-output/              # Test directory structure
 ├── temp/                 # Temporary test files
@@ -231,11 +231,11 @@ import { HognoseIndexer } from './src/indexers/hognoseIndexer';
 import { CatalogManager } from './src/catalog/catalogManager';
 
 // Run the indexer
-const indexer = new HognoseIndexer('charredUtensil/hognose', './output');
+const indexer = new HognoseIndexer('charredUtensil/hognose', './data');
 await indexer.indexHognose();
 
 // IMPORTANT: Rebuild the catalog index
-const catalogManager = new CatalogManager('./output');
+const catalogManager = new CatalogManager('./data');
 await catalogManager.rebuildCatalogIndex();
 
 // Now you can access all levels
@@ -259,7 +259,7 @@ await masterIndexer.indexAll(); // Automatically rebuilds catalog index
 Once the catalog index is built, you can access levels using CatalogManager:
 
 ```typescript
-const catalogManager = new CatalogManager('./output');
+const catalogManager = new CatalogManager('./data');
 await catalogManager.loadCatalogIndex();
 
 // Get all levels
@@ -297,7 +297,7 @@ The HognoseIndexer includes smart release management:
 ### Hognose Options
 
 ```typescript
-const indexer = new HognoseIndexer('charredUtensil/hognose', './output');
+const indexer = new HognoseIndexer('charredUtensil/hognose', './data');
 
 // Default: Process latest release only, auto-replace on new release
 await indexer.indexHognose();
@@ -317,7 +317,7 @@ await indexer.indexHognose(undefined, { replaceExisting: false });
 You can manually clear all levels from a specific source:
 
 ```typescript
-const catalogManager = new CatalogManager('./output');
+const catalogManager = new CatalogManager('./data');
 await catalogManager.loadCatalogIndex();
 
 // Clear all Hognose levels

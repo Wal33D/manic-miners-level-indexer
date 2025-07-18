@@ -1,8 +1,6 @@
 {
-  "outputDir": "./output",
+  "outputDir": "./data",
   "tempDir": "./temp",
-  "generateThumbnails": true,
-  "generateScreenshots": true,
   "sources": {
     "archive": {
       "enabled": true,
@@ -22,30 +20,6 @@
       "enabled": true,
       "githubRepo": "charredUtensil/hognose",
       "checkInterval": 86400000
-    }
-  },
-  "rendering": {
-    "thumbnailSize": { "width": 200, "height": 200 },
-    "screenshotSize": { "width": 800, "height": 600 },
-    "biomeColors": {
-      "rock": "#8B4513",
-      "dirt": "#8B4513",
-      "lava": "#FF4500",
-      "ice": "#87CEEB",
-      "crystal": "#9370DB",
-      "ore": "#CD853F",
-      "lava_flow": "#FF6347",
-      "water": "#4682B4",
-      "recharge": "#FFD700",
-      "slug": "#228B22",
-      "erosion": "#FF6347",
-      "landslide": "#8B4513",
-      "foundation": "#696969",
-      "hard": "#2F4F4F",
-      "solid": "#000000",
-      "power": "#FFFF00",
-      "lake": "#1E90FF",
-      "undiscovered": "#404040"
     }
   }
 }

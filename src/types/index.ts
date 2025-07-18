@@ -20,6 +20,7 @@ export interface LevelMetadata {
   difficulty?: number;
   rating?: number;
   downloadCount?: number;
+  formatVersion?: 'below-v1' | 'v1' | 'v2' | 'unknown';
 }
 
 export interface LevelFile {
@@ -27,15 +28,13 @@ export interface LevelFile {
   path: string;
   size: number;
   hash?: string;
-  type: 'dat' | 'screenshot' | 'thumbnail' | 'other';
+  type: 'dat' | 'other';
 }
 
 export interface Level {
   metadata: LevelMetadata;
   files: LevelFile[];
   catalogPath: string;
-  thumbnailPath?: string;
-  screenshotPath?: string;
   datFilePath: string;
   indexed: Date;
   lastUpdated: Date;
@@ -51,8 +50,6 @@ export interface CatalogIndex {
 export interface IndexerConfig {
   outputDir: string;
   tempDir: string;
-  generateThumbnails: boolean;
-  generateScreenshots: boolean;
   sources: {
     archive: {
       enabled: boolean;
@@ -83,15 +80,10 @@ export interface IndexerConfig {
       checkInterval?: number;
     };
   };
-  rendering: {
-    thumbnailSize: { width: number; height: number };
-    screenshotSize: { width: number; height: number };
-    biomeColors: Record<string, string>;
-  };
 }
 
 export interface IndexerProgress {
-  phase: 'scraping' | 'downloading' | 'rendering' | 'cataloging' | 'indexing';
+  phase: 'scraping' | 'downloading' | 'cataloging' | 'indexing';
   source: MapSource;
   current: number;
   total: number;
@@ -148,6 +140,7 @@ export interface DiscordMessage {
   content: string;
   author: string;
   timestamp: string;
+  channelId?: string;
   attachments: {
     filename: string;
     url: string;

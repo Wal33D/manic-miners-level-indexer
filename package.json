@@ -18,14 +18,19 @@
     "test:coverage": "jest --coverage",
     "test:example": "ts-node examples/basic-usage.ts",
     "test:discord": "ts-node tests/integration/test-discord.ts",
+    "test:discord:small": "ts-node scripts/test-discord-small.ts",
     "test:hognose": "ts-node tests/integration/test-hognose.ts",
     "test:all": "ts-node tests/integration/test-all-indexers.ts",
     "verify:hognose": "ts-node tests/integration/verify-hognose-complete.ts",
     "index": "ts-node scripts/index-all.ts",
     "index:archive": "ts-node scripts/index-archive.ts",
     "index:discord": "ts-node scripts/index-discord.ts",
+    "index:discord:v2": "ts-node scripts/index-discord-v2.ts",
+    "index:discord:direct": "ts-node scripts/index-discord-direct.ts",
     "index:hognose": "ts-node scripts/index-hognose.ts",
-    "clean:test": "ts-node scripts/clean-test-outputs.ts"
+    "build:discord-catalog": "ts-node scripts/build-discord-catalog.ts",
+    "clean:test": "ts-node scripts/clean-test-outputs.ts",
+    "migrate:versions": "ts-node src/scripts/migrateFormatVersions.ts"
   },
   "keywords": [
     "manic-miners",
@@ -39,8 +44,8 @@
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.53",
     "archiver": "^6.0.0",
-    "canvas": "^2.11.2",
     "chalk": "^4.1.2",
+    "discord.js-selfbot-v13": "^3.7.0",
     "dotenv": "^17.2.0",
     "fs-extra": "^11.1.0",
     "node-fetch": "^2.7.0",

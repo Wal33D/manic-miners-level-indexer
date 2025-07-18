@@ -338,6 +338,7 @@ export class HognoseIndexer {
         sourceUrl: `https://github.com/${this.githubRepo}/releases/tag/${release.tag_name}`,
         originalId: `${release.tag_name}/${datFileName}`,
         tags: ['hognose', 'github-release', release.tag_name],
+        formatVersion: 'v1', // Hognose levels are v1 or above
       };
 
       const levelFiles = [

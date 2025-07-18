@@ -8,8 +8,6 @@ async function testAllIndexers() {
   const config: IndexerConfig = {
     outputDir: TestPaths.integration.all,
     tempDir: TestPaths.temp.integration,
-    generateThumbnails: true,
-    generateScreenshots: true,
     sources: {
       archive: {
         enabled: true,
@@ -22,31 +20,6 @@ async function testAllIndexers() {
       hognose: {
         enabled: true,
         githubRepo: 'charredUtensil/hognose',
-      },
-    },
-    rendering: {
-      thumbnailSize: { width: 200, height: 200 },
-      screenshotSize: { width: 800, height: 600 },
-      biomeColors: {
-        rock: '#8B4513',
-        dirt: '#8B4513',
-        lava: '#FF4500',
-        water: '#4169E1',
-        ice: '#87CEEB',
-        energy: '#FFD700',
-        ore: '#C0C0C0',
-        crystal: '#9400D3',
-        rubble: '#A0522D',
-        path: '#DCDCDC',
-        slug: '#228B22',
-        erosion: '#FF6347',
-        landslide: '#8B4513',
-        foundation: '#696969',
-        hard: '#2F4F4F',
-        solid: '#000000',
-        power: '#FFFF00',
-        lake: '#1E90FF',
-        undiscovered: '#404040',
       },
     },
   };

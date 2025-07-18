@@ -82,19 +82,6 @@ export class ConfigManager {
     this.config.tempDir = dir;
   }
 
-  // Rendering configuration
-  updateRenderingConfig(updates: Partial<IndexerConfig['rendering']>): void {
-    this.config.rendering = { ...this.config.rendering, ...updates };
-  }
-
-  enableThumbnails(enable: boolean): void {
-    this.config.generateThumbnails = enable;
-  }
-
-  enableScreenshots(enable: boolean): void {
-    this.config.generateScreenshots = enable;
-  }
-
   // Archive configuration
   setArchiveBaseUrl(baseUrl: string): void {
     this.config.sources.archive.baseUrl = baseUrl;
@@ -170,21 +157,6 @@ export class ConfigManager {
       }
     }
 
-    // Validate rendering configuration
-    if (
-      this.config.rendering.thumbnailSize.width < 1 ||
-      this.config.rendering.thumbnailSize.height < 1
-    ) {
-      errors.push('Thumbnail size must be greater than 0');
-    }
-
-    if (
-      this.config.rendering.screenshotSize.width < 1 ||
-      this.config.rendering.screenshotSize.height < 1
-    ) {
-      errors.push('Screenshot size must be greater than 0');
-    }
-
     // Check if at least one source is enabled
     const enabledSources = Object.values(this.config.sources).filter(source => source.enabled);
     if (enabledSources.length === 0) {
@@ -216,23 +188,9 @@ export class ConfigManager {
       };
     }
 
-    if (updates.rendering) {
-      merged.rendering = {
-        ...merged.rendering,
-        ...updates.rendering,
-        thumbnailSize: { ...merged.rendering.thumbnailSize, ...updates.rendering.thumbnailSize },
-        screenshotSize: { ...merged.rendering.screenshotSize, ...updates.rendering.screenshotSize },
-        biomeColors: { ...merged.rendering.biomeColors, ...updates.rendering.biomeColors },
-      };
-    }
-
     // Handle primitive properties
     if (updates.outputDir !== undefined) merged.outputDir = updates.outputDir;
     if (updates.tempDir !== undefined) merged.tempDir = updates.tempDir;
-    if (updates.generateThumbnails !== undefined)
-      merged.generateThumbnails = updates.generateThumbnails;
-    if (updates.generateScreenshots !== undefined)
-      merged.generateScreenshots = updates.generateScreenshots;
 
     return merged;
   }
@@ -245,8 +203,6 @@ export class ConfigManager {
       _comments: {
         outputDir: 'Directory where all indexed levels and catalogs will be stored',
         tempDir: 'Temporary directory for processing files',
-        generateThumbnails: 'Whether to generate thumbnail images for levels',
-        generateScreenshots: 'Whether to generate full-size screenshots for levels',
         sources: {
           archive: {
             enabled: 'Enable Internet Archive indexing',
@@ -261,11 +217,6 @@ export class ConfigManager {
             githubRepo: "GitHub repository in format 'owner/repo'",
             checkInterval: 'Interval in milliseconds to check for new releases',
           },
-        },
-        rendering: {
-          thumbnailSize: 'Size of generated thumbnail images',
-          screenshotSize: 'Size of generated screenshot images',
-          biomeColors: 'Color mapping for different biome types',
         },
       },
     };

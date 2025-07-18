@@ -1,10 +1,8 @@
 import { IndexerConfig } from '../types';
 
 export const defaultConfig: IndexerConfig = {
-  outputDir: './output',
+  outputDir: './data',
   tempDir: './temp',
-  generateThumbnails: true,
-  generateScreenshots: true,
   sources: {
     archive: {
       enabled: true,
@@ -21,31 +19,6 @@ export const defaultConfig: IndexerConfig = {
       enabled: true,
       githubRepo: 'charredUtensil/groundhog',
       checkInterval: 24 * 60 * 60 * 1000, // 24 hours
-    },
-  },
-  rendering: {
-    thumbnailSize: { width: 200, height: 200 },
-    screenshotSize: { width: 800, height: 600 },
-    biomeColors: {
-      rock: '#8B4513',
-      dirt: '#8B4513',
-      lava: '#FF4500',
-      water: '#4169E1',
-      ice: '#87CEEB',
-      energy: '#FFD700',
-      ore: '#C0C0C0',
-      crystal: '#9400D3',
-      rubble: '#A0522D',
-      path: '#DCDCDC',
-      slug: '#228B22',
-      erosion: '#FF6347',
-      landslide: '#8B4513',
-      foundation: '#696969',
-      hard: '#2F4F4F',
-      solid: '#000000',
-      power: '#FFFF00',
-      lake: '#1E90FF',
-      undiscovered: '#404040',
     },
   },
 };
@@ -84,7 +57,5 @@ export const FILE_EXTENSIONS = {
 export const CATALOG_FILENAMES = {
   INDEX: 'catalog_index.json',
   LEVEL: 'catalog.json',
-  THUMBNAIL: 'thumbnail.png',
-  SCREENSHOT: 'screenshot.png',
-  ORIGINAL_THUMBNAIL: 'thumbnail_original.png',
+  MASTER: 'master_index.json',
 };

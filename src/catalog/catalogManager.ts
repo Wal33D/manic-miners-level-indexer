@@ -427,23 +427,24 @@ export class CatalogManager {
       'Tags',
       'Description',
       'DAT File',
-      'Thumbnail',
-      'Screenshot',
     ];
 
-    const rows = this.catalogIndex.levels.map(level => [
-      level.metadata.id,
-      level.metadata.title,
-      level.metadata.author,
-      level.metadata.source,
-      level.metadata.postedDate.toISOString(),
-      level.metadata.fileSize || 0,
-      level.metadata.tags?.join(';') || '',
-      level.metadata.description || '',
-      level.datFilePath,
-      level.thumbnailPath || '',
-      level.screenshotPath || '',
-    ]);
+    const rows = this.catalogIndex.levels.map(level => {
+      // Convert absolute paths to relative paths
+      const datFileRelative = path.relative(this.outputDir, level.datFilePath);
+
+      return [
+        level.metadata.id,
+        level.metadata.title,
+        level.metadata.author,
+        level.metadata.source,
+        level.metadata.postedDate.toISOString(),
+        level.metadata.fileSize || 0,
+        level.metadata.tags?.join(';') || '',
+        level.metadata.description || '',
+        datFileRelative,
+      ];
+    });
 
     return [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
   }
