@@ -73,9 +73,15 @@ export class MasterIndexer {
       if (this.internetArchiveIndexer) {
         logger.info('Starting improved Internet Archive indexing (V2)...');
         indexingPromises.push(
-          this.internetArchiveIndexer.indexArchive(progress => {
-            logger.progress(`[Internet Archive] ${progress.message}`, progress.current, progress.total);
-          }).then(result => ({ source: 'Internet Archive', result }))
+          this.internetArchiveIndexer
+            .indexArchive(progress => {
+              logger.progress(
+                `[Internet Archive] ${progress.message}`,
+                progress.current,
+                progress.total
+              );
+            })
+            .then(result => ({ source: 'Internet Archive', result }))
         );
       }
 
@@ -83,36 +89,44 @@ export class MasterIndexer {
       if (this.hognoseIndexer) {
         logger.info('Starting Hognose indexing...');
         indexingPromises.push(
-          this.hognoseIndexer.indexHognose(progress => {
-            logger.progress(`[Hognose] ${progress.message}`, progress.current, progress.total);
-          }).then(result => ({ source: 'Hognose', result }))
+          this.hognoseIndexer
+            .indexHognose(progress => {
+              logger.progress(`[Hognose] ${progress.message}`, progress.current, progress.total);
+            })
+            .then(result => ({ source: 'Hognose', result }))
         );
       }
 
       // Handle Discord authentication once for both indexers
       if (this.discordCommunityIndexer || this.discordArchiveIndexer) {
         logger.info('Authenticating with Discord...');
-        
+
         // Create a shared auth provider
         const { DiscordAuth } = await import('../auth/discordAuth');
         const discordAuth = new DiscordAuth();
-        
+
         try {
           // Get token once
           const authResult = await discordAuth.getToken();
-          
+
           if (authResult.token) {
             logger.success('Discord authentication successful!');
-            
+
             // Share the token with both indexers
             if (this.discordCommunityIndexer) {
               logger.info('Starting Discord Community indexing...');
               // Set the token before indexing
               this.discordCommunityIndexer.setToken(authResult.token);
               indexingPromises.push(
-                this.discordCommunityIndexer.indexDiscord(progress => {
-                  logger.progress(`[Discord Community] ${progress.message}`, progress.current, progress.total);
-                }).then(result => ({ source: 'Discord Community', result }))
+                this.discordCommunityIndexer
+                  .indexDiscord(progress => {
+                    logger.progress(
+                      `[Discord Community] ${progress.message}`,
+                      progress.current,
+                      progress.total
+                    );
+                  })
+                  .then(result => ({ source: 'Discord Community', result }))
               );
             }
 
@@ -121,9 +135,15 @@ export class MasterIndexer {
               // Set the token before indexing
               this.discordArchiveIndexer.setToken(authResult.token);
               indexingPromises.push(
-                this.discordArchiveIndexer.indexDiscord(progress => {
-                  logger.progress(`[Discord Archive] ${progress.message}`, progress.current, progress.total);
-                }).then(result => ({ source: 'Discord Archive', result }))
+                this.discordArchiveIndexer
+                  .indexDiscord(progress => {
+                    logger.progress(
+                      `[Discord Archive] ${progress.message}`,
+                      progress.current,
+                      progress.total
+                    );
+                  })
+                  .then(result => ({ source: 'Discord Archive', result }))
               );
             }
           } else {
@@ -144,7 +164,9 @@ export class MasterIndexer {
         if (promiseResult.status === 'fulfilled') {
           const { source, result } = promiseResult.value;
           if (result.success) {
-            logger.success(`${source} indexing completed: ${result.levelsProcessed} levels processed`);
+            logger.success(
+              `${source} indexing completed: ${result.levelsProcessed} levels processed`
+            );
             totalProcessed += result.levelsProcessed;
           } else {
             logger.error(`${source} indexing failed with ${result.errors.length} errors`);

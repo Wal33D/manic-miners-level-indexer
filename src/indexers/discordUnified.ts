@@ -60,7 +60,12 @@ export class DiscordUnifiedIndexer {
   private messageCache: Map<string, DiscordMessage> = new Map(); // Cache for associating images
   private excludedThreads: Set<string>;
 
-  constructor(channels: string[], outputDir: string, source: MapSource, excludedThreads?: string[]) {
+  constructor(
+    channels: string[],
+    outputDir: string,
+    source: MapSource,
+    excludedThreads?: string[]
+  ) {
     this.channels = channels;
     this.outputDir = outputDir;
     this.source = source;
