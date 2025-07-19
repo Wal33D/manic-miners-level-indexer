@@ -66,7 +66,15 @@ export class MasterIndexer {
       let totalProcessed = 0;
       let totalErrors = 0;
 
-      // Create array of indexing promises
+      // Discord indexers will handle their own authentication
+      // Just ensure they use the same cache directory
+      let discordEnabled = false;
+      if (this.discordCommunityIndexer || this.discordArchiveIndexer) {
+        discordEnabled = true;
+        logger.info('Discord indexers will authenticate as needed...');
+      }
+
+      // NOW create array of indexing promises AFTER Discord auth
       const indexingPromises: Promise<{ source: string; result: any }>[] = [];
 
       // Add Internet Archive indexer
@@ -97,61 +105,36 @@ export class MasterIndexer {
         );
       }
 
-      // Handle Discord authentication once for both indexers
-      if (this.discordCommunityIndexer || this.discordArchiveIndexer) {
-        logger.info('Authenticating with Discord...');
+      // Add Discord indexer promises - they handle their own auth
+      if (discordEnabled) {
+        if (this.discordCommunityIndexer) {
+          logger.info('Starting Discord Community indexing...');
+          indexingPromises.push(
+            this.discordCommunityIndexer
+              .indexDiscord(progress => {
+                logger.progress(
+                  `[Discord Community] ${progress.message}`,
+                  progress.current,
+                  progress.total
+                );
+              })
+              .then(result => ({ source: 'Discord Community', result }))
+          );
+        }
 
-        // Create a shared auth provider
-        const { DiscordAuth } = await import('../auth/discordAuth');
-        const discordAuth = new DiscordAuth();
-
-        try {
-          // Get token once
-          const authResult = await discordAuth.getToken();
-
-          if (authResult.token) {
-            logger.success('Discord authentication successful!');
-
-            // Share the token with both indexers
-            if (this.discordCommunityIndexer) {
-              logger.info('Starting Discord Community indexing...');
-              // Set the token before indexing
-              this.discordCommunityIndexer.setToken(authResult.token);
-              indexingPromises.push(
-                this.discordCommunityIndexer
-                  .indexDiscord(progress => {
-                    logger.progress(
-                      `[Discord Community] ${progress.message}`,
-                      progress.current,
-                      progress.total
-                    );
-                  })
-                  .then(result => ({ source: 'Discord Community', result }))
-              );
-            }
-
-            if (this.discordArchiveIndexer) {
-              logger.info('Starting Discord Archive indexing...');
-              // Set the token before indexing
-              this.discordArchiveIndexer.setToken(authResult.token);
-              indexingPromises.push(
-                this.discordArchiveIndexer
-                  .indexDiscord(progress => {
-                    logger.progress(
-                      `[Discord Archive] ${progress.message}`,
-                      progress.current,
-                      progress.total
-                    );
-                  })
-                  .then(result => ({ source: 'Discord Archive', result }))
-              );
-            }
-          } else {
-            logger.error('Discord authentication failed - skipping Discord indexers');
-          }
-        } catch (error) {
-          logger.error('Discord authentication error:', error);
-          logger.warn('Skipping Discord indexers due to authentication failure');
+        if (this.discordArchiveIndexer) {
+          logger.info('Starting Discord Archive indexing...');
+          indexingPromises.push(
+            this.discordArchiveIndexer
+              .indexDiscord(progress => {
+                logger.progress(
+                  `[Discord Archive] ${progress.message}`,
+                  progress.current,
+                  progress.total
+                );
+              })
+              .then(result => ({ source: 'Discord Archive', result }))
+          );
         }
       }
 
