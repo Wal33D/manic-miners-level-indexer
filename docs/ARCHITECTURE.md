@@ -136,9 +136,11 @@ User Request
     ▼
 MasterIndexer.indexAll()
     │
-    ├─► Archive Indexer ──► Search API ──► Download Files
+    ├─► Internet Archive Indexer ──► Search API ──► Download Files
     │
-    ├─► Discord Indexer ──► Auth Check ──► Fetch Messages ──► Extract Attachments
+    ├─► Discord Community Indexer ──► Auth Check ──► Fetch Forum Posts ──► Extract Attachments
+    │
+    ├─► Discord Archive Indexer ──► Auth Check ──► Fetch Messages ──► Extract Attachments
     │
     └─► Hognose Indexer ──► GitHub API ──► Download Releases ──► Extract ZIPs
               │

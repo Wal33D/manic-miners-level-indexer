@@ -17,7 +17,7 @@ The Manic Miners Level Indexer is a TypeScript-based tool that creates a searcha
 
 ## 🚀 Key Features
 
-- **Multi-Source Indexing**: Collects levels from Archive.org, Discord channels, and the Hognose GitHub repository
+- **Multi-Source Indexing**: Collects levels from Internet Archive, Discord channels (Community and Archive), and the Hognose GitHub repository
 - **Automated Metadata Extraction**: Captures title, author, description, tags, and game requirements
 - **Format Version Detection**: Automatically identifies level format versions (below-v1, v1, v2)
 - **Quality Validation**: Validates level files and metadata completeness
@@ -47,7 +47,7 @@ npm install
 
 # Create a .env file (optional, for Discord indexing)
 cp .env.example .env
-# Edit .env and add your Discord token: DISCORD_TOKEN=your_token_here
+# Edit .env and add your Discord token: DISCORD_USER_TOKEN=your_token_here
 
 # Build the project
 npm run build
@@ -64,11 +64,14 @@ npm run index
 Index individual sources:
 
 ```bash
-# Index Archive.org levels
-npm run index:archive
+# Index Internet Archive levels
+npm run index:internet-archive
 
-# Index Discord levels (requires authentication)
-npm run index:discord
+# Index Discord Community levels (requires authentication)
+npm run index:discord:community
+
+# Index Discord Archive levels (requires authentication)
+npm run index:discord:archive
 
 # Index Hognose repository levels
 npm run index:hognose
@@ -92,22 +95,27 @@ Create a `config.json` file to customize indexing behavior:
 {
   "outputDir": "./output",
   "sources": {
-    "archive": {
+    "internet_archive": {
       "enabled": true,
       "baseUrl": "https://archive.org/advancedsearch.php",
       "searchQueries": ["manic miners level"],
       "maxConcurrentDownloads": 5
     },
-    "discord": {
+    "discord_community": {
       "enabled": true,
       "channels": [
-        "683985075704299520",
         "1139908458968252457"
+      ]
+    },
+    "discord_archive": {
+      "enabled": true,
+      "channels": [
+        "683985075704299520"
       ]
     },
     "hognose": {
       "enabled": true,
-      "githubRepo": "charredUtensil/hognose"
+      "githubRepo": "charredUtensil/groundhog"
     }
   }
 }
@@ -120,8 +128,9 @@ Create a `config.json` file to customize indexing behavior:
 | Command | Description |
 |---------|-------------|
 | `npm run index` | Index all enabled sources |
-| `npm run index:archive` | Index Archive.org levels |
-| `npm run index:discord` | Index Discord levels |
+| `npm run index:internet-archive` | Index Internet Archive levels |
+| `npm run index:discord:community` | Index Discord Community levels |
+| `npm run index:discord:archive` | Index Discord Archive levels |
 | `npm run index:hognose` | Index Hognose levels |
 
 ### 🧪 Testing Scripts
@@ -137,7 +146,6 @@ Create a `config.json` file to customize indexing behavior:
 
 | Command | Description |
 |---------|-------------|
-| `npm run show:output` | Display output directory structure |
 | `npm run validate:catalog` | Validate existing catalog |
 | `npm run rebuild:catalog` | Rebuild catalog from existing levels |
 | `npm run clean:test` | Clean test output directories |
@@ -158,13 +166,13 @@ Create a `config.json` file to customize indexing behavior:
 output/
 ├── catalog_index.json          # Master catalog of all levels
 ├── master_index.json          # Enhanced index with statistics
-├── levels-archive/            # Archive.org levels
+├── levels-internet-archive/   # Internet Archive levels
 │   ├── catalog_index.json    # Source-specific catalog
 │   └── [uuid]/               # Individual level directory
 │       ├── catalog.json      # Level metadata
-│       ├── level.dat         # Game data file
-│       └── images/           # Screenshots/thumbnails
-├── levels-discord/           # Discord levels
+│       └── level.dat         # Game data file
+├── levels-discord-community/ # Discord Community levels
+├── levels-discord-archive/   # Discord Archive levels
 └── levels-hognose/          # Hognose repository levels
 ```
 
@@ -176,8 +184,9 @@ import { MasterIndexer, IndexerConfig } from 'manic-miners-level-indexer';
 const config: IndexerConfig = {
   outputDir: './my-levels',
   sources: {
-    archive: { enabled: true },
-    discord: { enabled: true, channels: ['1139908458968252457'] },
+    internet_archive: { enabled: true },
+    discord_community: { enabled: true, channels: ['1139908458968252457'] },
+    discord_archive: { enabled: true, channels: ['683985075704299520'] },
     hognose: { enabled: true }
   }
 };
