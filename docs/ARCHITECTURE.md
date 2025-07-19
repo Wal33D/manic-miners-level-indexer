@@ -210,8 +210,7 @@ src/
 ├── utils/                  # Utility functions
 │   ├── logger.ts          # Logging utility
 │   ├── fileUtils.ts       # File operations
-│   ├── sourceUtils.ts     # Source helpers
-│   └── datVersionDetector.ts # Format detection
+│   └── sourceUtils.ts     # Source helpers
 ├── tests/                  # Testing utilities
 │   ├── outputValidator.ts  # Validation logic
 │   └── analysisReporter.ts # Reporting tools
