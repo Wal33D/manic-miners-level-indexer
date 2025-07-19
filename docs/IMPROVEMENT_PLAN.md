@@ -35,7 +35,6 @@ const processData = (data: ProcessData): string[] => {
 ```
 
 **Files to update**:
-- `scripts/index-discord-unified.ts`
 - `scripts/test/test-discord-small.ts`
 - `scripts/utils/validate-full-catalog.ts`
 - `src/indexers/discordDirectAPI.ts`

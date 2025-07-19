@@ -7,6 +7,7 @@ import { getSourceLevelsDir } from '../../src/utils/sourceUtils';
 import { MapSource } from '../../src/types';
 import { OutputValidator } from '../../src/tests/outputValidator';
 import { AnalysisReporter } from '../../src/tests/analysisReporter';
+import { defaultConfig } from '../../src/config/default';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -15,8 +16,8 @@ dotenv.config();
 async function testDiscordIndexer() {
   const outputDir = TestPaths.integration.discord;
   const channels = [
-    '683985075704299520', // Old pre-v1 maps
-    '1139908458968252457', // Community levels (v1+)
+    ...defaultConfig.sources.discord_archive.channels,
+    ...defaultConfig.sources.discord_community.channels,
   ];
 
   // Clean up previous test output
@@ -26,17 +27,17 @@ async function testDiscordIndexer() {
   logger.info('Starting Discord indexer test...');
   logger.info('Output directory:', outputDir);
   logger.info('Channels to index:');
-  logger.info('  - 683985075704299520 (Old pre-v1 maps)');
-  logger.info('  - 1139908458968252457 (Community levels v1+)');
+  logger.info(`  - ${defaultConfig.sources.discord_archive.channels[0]} (Old pre-v1 maps)`);
+  logger.info(`  - ${defaultConfig.sources.discord_community.channels[0]} (Community levels v1+)`);
 
   // Test both Discord sources
   const communityIndexer = new DiscordUnifiedIndexer(
-    ['1139908458968252457'], // Community levels (v1+)
+    defaultConfig.sources.discord_community.channels,
     outputDir,
     MapSource.DISCORD_COMMUNITY
   );
   const archiveIndexer = new DiscordUnifiedIndexer(
-    ['683985075704299520'], // Old pre-v1 maps
+    defaultConfig.sources.discord_archive.channels,
     outputDir,
     MapSource.DISCORD_ARCHIVE
   );

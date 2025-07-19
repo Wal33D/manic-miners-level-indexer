@@ -4,10 +4,10 @@ This directory contains various scripts for running and managing the Manic Miner
 
 ## Main Scripts (Production)
 
-- **index-all.ts** - Run all indexers (Archive.org, Discord, Hognose)
-- **index-archive.ts** - Index levels from Archive.org only
-- **index-discord.ts** - Index levels from Discord channels only
-- **index-discord-unified.ts** - Index Discord using the unified indexer
+- **index-all.ts** - Run all indexers (Internet Archive, Discord, Hognose)
+- **index-internet-archive.ts** - Index levels from Internet Archive only
+- **index-discord-community.ts** - Index levels from Discord Community forum channel
+- **index-discord-archive.ts** - Index levels from Discord Archive channel
 - **index-hognose.ts** - Index levels from Hognose GitHub releases only
 
 ## test/ Directory (Development/Testing)
@@ -47,10 +47,13 @@ npx tsx scripts/<script-name>.ts
 For example:
 ```bash
 # Run all indexers
-npm run index-all
+npm run index
 
-# Run only Discord indexer
-npm run index-discord
+# Run Discord Community indexer
+npm run index:discord:community
+
+# Run Discord Archive indexer
+npm run index:discord:archive
 
 # Validate the catalog
 npx tsx scripts/utils/validate-full-catalog.ts

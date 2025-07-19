@@ -3,6 +3,7 @@ import { DiscordUnifiedIndexer } from '../../src/indexers/discordUnified';
 import { logger } from '../../src/utils/logger';
 import { FileUtils } from '../../src/utils/fileUtils';
 import { Level, DiscordMessage, MapSource } from '../../src/types';
+import { defaultConfig } from '../../src/config/default';
 import path from 'path';
 import fs from 'fs-extra';
 
@@ -22,16 +23,16 @@ async function testDiscordSmall() {
     const processedPath = path.join(TEST_OUTPUT_DIR, 'discord_direct_processed.json');
     await fs.writeJSON(processedPath, []); // Start fresh
 
-    // Test with both channels
+    // Test with both channels from config
     const TEST_CHANNELS = [
-      '683985075704299520', // Old pre-v1 maps
-      '1139908458968252457', // Community levels (v1+)
+      ...defaultConfig.sources.discord_archive.channels,
+      ...defaultConfig.sources.discord_community.channels,
     ];
 
     logger.info('Initializing Discord unified indexer...');
     logger.info('Testing channels:');
-    logger.info('  - 683985075704299520 (Old pre-v1 maps)');
-    logger.info('  - 1139908458968252457 (Community levels v1+)');
+    logger.info(`  - ${defaultConfig.sources.discord_archive.channels[0]} (Old pre-v1 maps)`);
+    logger.info(`  - ${defaultConfig.sources.discord_community.channels[0]} (Community levels v1+)`);
     const discordIndexer = new DiscordUnifiedIndexer(
       TEST_CHANNELS,
       TEST_OUTPUT_DIR,
@@ -81,7 +82,7 @@ async function testDiscordSmall() {
     logger.info(`Messages processed per channel:`);
     Object.entries(messageCountPerChannel).forEach(([channelId, count]) => {
       const channelName =
-        channelId === '683985075704299520' ? 'Old pre-v1 maps' : 'Community levels (v1+)';
+        channelId === defaultConfig.sources.discord_archive.channels[0] ? 'Old pre-v1 maps' : 'Community levels (v1+)';
       logger.info(`  - ${channelName}: ${count} messages`);
     });
 
