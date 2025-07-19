@@ -460,4 +460,8 @@ export class CatalogManager {
       lastUpdated: this.catalogIndex.lastUpdated,
     };
   }
+
+  getCatalog(): CatalogIndex {
+    return this.catalogIndex;
+  }
 }

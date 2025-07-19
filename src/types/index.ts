@@ -1,6 +1,7 @@
 export enum MapSource {
-  ARCHIVE = 'archive',
-  DISCORD = 'discord',
+  INTERNET_ARCHIVE = 'internet_archive',
+  DISCORD_COMMUNITY = 'discord_community',
+  DISCORD_ARCHIVE = 'discord_archive',
   HOGNOSE = 'hognose',
 }
 
@@ -21,7 +22,6 @@ export interface LevelMetadata {
   rating?: number;
   downloadCount?: number;
   formatVersion?: 'below-v1' | 'v1' | 'v2' | 'unknown';
-  releaseId?: string;
   discordChannelId?: string;
   discordChannelName?: string;
 }
@@ -45,7 +45,7 @@ export interface Level {
 
 export interface CatalogIndex {
   totalLevels: number;
-  sources: Record<MapSource, number>;
+  sources: Partial<Record<MapSource, number>>;
   lastUpdated: Date;
   levels: Level[];
 }
@@ -53,7 +53,7 @@ export interface CatalogIndex {
 export interface IndexerConfig {
   outputDir: string;
   sources: {
-    archive: {
+    internet_archive: {
       enabled: boolean;
       baseUrl: string;
       concurrentDownloads?: number;
@@ -72,7 +72,11 @@ export interface IndexerConfig {
       skipExisting?: boolean;
       verifyChecksums?: boolean;
     };
-    discord: {
+    discord_community: {
+      enabled: boolean;
+      channels: string[];
+    };
+    discord_archive: {
       enabled: boolean;
       channels: string[];
     };
