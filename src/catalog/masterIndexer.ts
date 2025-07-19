@@ -75,7 +75,7 @@ export class MasterIndexer {
       }
 
       // NOW create array of indexing promises AFTER Discord auth
-      const indexingPromises: Promise<{ source: string; result: any }>[] = [];
+      const indexingPromises: Promise<{ source: string; result: unknown }>[] = [];
 
       // Add Internet Archive indexer
       if (this.internetArchiveIndexer) {
