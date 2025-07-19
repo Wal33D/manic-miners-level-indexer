@@ -126,19 +126,6 @@ async function buildDiscordCatalog() {
       `  - Community levels (1139908458968252457): ${channelStats.get('1139908458968252457') || 0} levels`
     );
 
-    // Step 10: Check for duplicates
-    logger.info('\nStep 10: Checking for duplicate levels...');
-    const duplicates = await catalogManager.getDuplicateLevels();
-
-    if (duplicates.length > 0) {
-      logger.warn(`Found ${duplicates.length} sets of duplicate levels:`);
-      duplicates.slice(0, 5).forEach(set => {
-        logger.warn(`  - "${set[0].metadata.title}" appears ${set.length} times`);
-      });
-    } else {
-      logger.success('No duplicate levels found!');
-    }
-
     logger.success('\n=== Discord Catalog Build Complete! ===');
     logger.info('\nCatalog files created:');
     logger.info(`  - ${path.join(OUTPUT_DIR, CATALOG_FILENAMES.INDEX)} - Main catalog index`);

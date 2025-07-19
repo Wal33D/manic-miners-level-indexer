@@ -460,30 +460,4 @@ export class CatalogManager {
       lastUpdated: this.catalogIndex.lastUpdated,
     };
   }
-
-  async getDuplicateLevels(): Promise<Level[][]> {
-    const duplicates: Level[][] = [];
-    const titleMap = new Map<string, Level[]>();
-
-    // Group levels by title
-    for (const level of this.catalogIndex.levels) {
-      const title = level.metadata.title.toLowerCase();
-      if (!titleMap.has(title)) {
-        titleMap.set(title, []);
-      }
-      const levels = titleMap.get(title);
-      if (levels) {
-        levels.push(level);
-      }
-    }
-
-    // Find duplicates
-    for (const levels of titleMap.values()) {
-      if (levels.length > 1) {
-        duplicates.push(levels);
-      }
-    }
-
-    return duplicates;
-  }
 }

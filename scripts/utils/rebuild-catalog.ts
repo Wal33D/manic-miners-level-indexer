@@ -107,19 +107,6 @@ async function rebuildCatalog() {
     logger.success(`  - JSON: ${jsonExport}`);
     logger.success(`  - CSV: ${csvExport}`);
 
-    // Check for duplicates
-    logger.info('\nChecking for duplicate levels...');
-    const duplicates = await catalogManager.getDuplicateLevels();
-
-    if (duplicates.length > 0) {
-      logger.warn(`Found ${duplicates.length} sets of duplicate levels:`);
-      duplicates.slice(0, 5).forEach(set => {
-        logger.warn(`  - "${set[0].metadata.title}" appears ${set.length} times`);
-      });
-    } else {
-      logger.success('No duplicate levels found!');
-    }
-
     // Sample some Discord levels
     logger.info('\n=== Sample Discord Levels ===');
     const recentDiscordLevels = discordLevels
