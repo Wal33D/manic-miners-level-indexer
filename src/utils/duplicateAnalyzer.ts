@@ -78,11 +78,6 @@ export class DuplicateAnalyzer {
 
     const source = level.metadata.source;
 
-    // Skip MERGED sources in duplicate analysis
-    if (source === MapSource.MERGED) {
-      return;
-    }
-
     // Update source statistics
     this.statistics.bySource[source].total++;
 

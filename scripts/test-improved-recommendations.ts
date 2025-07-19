@@ -71,10 +71,8 @@ async function testImprovedRecommendations() {
     const originalLevel = group.levels.find(l => l.id === originalRec);
     const improvedLevel = group.levels.find(l => l.id === improvedRec);
 
-    if (originalLevel && originalLevel.source !== MapSource.MERGED)
-      origRecs[originalLevel.source]++;
-    if (improvedLevel && improvedLevel.source !== MapSource.MERGED)
-      improvedRecs[improvedLevel.source]++;
+    if (originalLevel) origRecs[originalLevel.source]++;
+    if (improvedLevel) improvedRecs[improvedLevel.source]++;
 
     if (originalRec !== improvedRec) changedCount++;
   }

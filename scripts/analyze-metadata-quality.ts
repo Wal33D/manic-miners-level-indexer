@@ -40,8 +40,6 @@ async function analyzeMetadataQuality() {
   for (const group of report.duplicateGroups) {
     for (const level of group.levels) {
       const source = level.source;
-      // Skip merged sources
-      if (source === MapSource.MERGED) continue;
 
       if (stats[source]) {
         stats[source].total++;

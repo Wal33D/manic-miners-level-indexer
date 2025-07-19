@@ -14,6 +14,8 @@ import { getSourceLevelsDir } from '../utils/sourceUtils';
 import { DiscordAuth } from '../auth/discordAuth';
 import path from 'path';
 import fs from 'fs-extra';
+import unzipper from 'unzipper';
+import { Readable } from 'stream';
 
 interface DiscordThread {
   id: string;
@@ -305,7 +307,7 @@ export class DiscordUnifiedIndexer {
         messages.push(...(await this.fetchTextChannelMessages(channelId)));
       }
 
-      logger.info(`Total messages with .dat files found: ${messages.length}`);
+      logger.info(`Total messages with .dat/.zip files found: ${messages.length}`);
       return messages;
     } catch (error) {
       logger.error(`Failed to fetch messages for channel ${channelId}:`, error);
@@ -359,11 +361,12 @@ export class DiscordUnifiedIndexer {
         // Cache all messages for association
         this.messageCache.set(msg.id, message);
 
-        const datAttachments = msg.attachments.filter(att =>
-          att.filename.toLowerCase().endsWith('.dat')
-        );
+        const relevantAttachments = msg.attachments.filter(att => {
+          const lower = att.filename.toLowerCase();
+          return lower.endsWith('.dat') || lower.endsWith('.zip');
+        });
 
-        if (datAttachments.length > 0) {
+        if (relevantAttachments.length > 0) {
           messages.push(message);
         }
       }
@@ -425,11 +428,12 @@ export class DiscordUnifiedIndexer {
           // Cache all messages for association
           this.messageCache.set(msg.id, message);
 
-          const datAttachments = msg.attachments.filter(att =>
-            att.filename.toLowerCase().endsWith('.dat')
-          );
+          const relevantAttachments = msg.attachments.filter(att => {
+            const lower = att.filename.toLowerCase();
+            return lower.endsWith('.dat') || lower.endsWith('.zip');
+          });
 
-          if (datAttachments.length > 0) {
+          if (relevantAttachments.length > 0) {
             messages.push(message);
           }
         }
@@ -437,7 +441,7 @@ export class DiscordUnifiedIndexer {
         lastMessageId = threadMessages[threadMessages.length - 1].id;
       }
 
-      logger.debug(`Found ${messages.length} messages with .dat files in thread ${threadId}`);
+      logger.debug(`Found ${messages.length} messages with .dat/.zip files in thread ${threadId}`);
     } catch (error) {
       logger.error(`Failed to fetch messages for thread ${threadId}:`, error);
     }
@@ -452,9 +456,12 @@ export class DiscordUnifiedIndexer {
     const levels: Level[] = [];
 
     try {
-      // Separate .dat files
+      // Separate .dat and .zip files
       const datAttachments = message.attachments.filter(att =>
         att.filename.toLowerCase().endsWith('.dat')
+      );
+      const zipAttachments = message.attachments.filter(att =>
+        att.filename.toLowerCase().endsWith('.zip')
       );
 
       // Process each .dat file as a level
@@ -490,6 +497,32 @@ export class DiscordUnifiedIndexer {
           levels.push(level);
           // Store the hash to avoid duplicates
           this.processedHashes.set(fileHash, level.metadata.id);
+        }
+      }
+
+      // Process each .zip file as a map pack
+      for (const zipAttachment of zipAttachments) {
+        const fileHash = await FileUtils.getUrlHash(zipAttachment.url);
+        const existingLevelId = this.processedHashes.get(fileHash);
+
+        if (existingLevelId) {
+          logger.info(
+            `Skipping duplicate zip ${zipAttachment.filename} (already processed as ${existingLevelId})`
+          );
+          continue;
+        }
+
+        logger.info(`Processing map pack: ${zipAttachment.filename}`);
+        const packLevels = await this.processDiscordZipAttachment(
+          zipAttachment,
+          message,
+          channelId
+        );
+
+        levels.push(...packLevels);
+        // Store the hash to avoid duplicates
+        if (packLevels.length > 0) {
+          this.processedHashes.set(fileHash, `pack-${packLevels[0].metadata.id}`);
         }
       }
 
@@ -581,6 +614,13 @@ export class DiscordUnifiedIndexer {
       // Extract level name from filename (remove .dat extension)
       const levelName = path.basename(datFileName, '.dat');
 
+      // Determine channel name based on known channel IDs
+      const knownChannels: Record<string, string> = {
+        '683985075704299520': 'levels-archive', // OLD text-only archived channel (until July 2023)
+        '1139908458968252457': 'community-levels', // CURRENT forum channel (August 2023 onwards, still active)
+      };
+      const channelName = knownChannels[channelId] || 'unknown-channel';
+
       const metadata: LevelMetadata = {
         id: levelId,
         title: levelName,
@@ -590,8 +630,10 @@ export class DiscordUnifiedIndexer {
         source: MapSource.DISCORD,
         sourceUrl: `https://discord.com/channels/${channelId}/${message.id}`,
         originalId: message.id,
-        tags: ['discord', 'community'],
+        tags: ['discord', 'community', `discord-${channelName}`],
         formatVersion: 'below-v1', // Discord levels are typically below v1
+        discordChannelId: channelId,
+        discordChannelName: channelName,
       };
 
       const levelFiles: LevelFile[] = [
@@ -651,6 +693,181 @@ export class DiscordUnifiedIndexer {
         error
       );
       return null;
+    }
+  }
+
+  /**
+   * Process a Discord zip attachment containing multiple maps
+   */
+  private async processDiscordZipAttachment(
+    zipAttachment: {
+      filename: string;
+      url: string;
+      size: number;
+    },
+    message: DiscordMessage,
+    channelId: string
+  ): Promise<Level[]> {
+    const levels: Level[] = [];
+    const tempDir = path.join(this.outputDir, 'temp', `discord-zip-${Date.now()}`);
+
+    try {
+      await fs.ensureDir(tempDir);
+      const zipPath = path.join(tempDir, zipAttachment.filename);
+
+      // Download the zip file
+      logger.info(`Downloading zip: ${zipAttachment.filename}`);
+      await this.downloadFile(zipAttachment.url, zipPath);
+
+      // Extract level name from zip filename (for pack name)
+      const packName = path.basename(zipAttachment.filename, '.zip');
+
+      // Process ZIP entries
+      const response = await fetch(zipAttachment.url);
+      if (!response.ok) {
+        throw new Error(`Failed to download zip: ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error('Response body is null');
+      }
+
+      // Track the maps in this pack
+      const packMaps: string[] = [];
+      let mapIndex = 0;
+
+      // Process ZIP entries directly from the stream
+      const zipStream = Readable.from(response.body).pipe(unzipper.Parse());
+
+      await new Promise<void>((resolve, reject) => {
+        zipStream.on('entry', async (entry: unzipper.Entry) => {
+          const fileName = entry.path;
+          const type = entry.type; // 'Directory' or 'File'
+
+          if (type === 'File' && fileName.toLowerCase().endsWith('.dat')) {
+            try {
+              mapIndex++;
+              const levelId = FileUtils.generateUniqueId();
+              const levelDir = path.join(
+                this.outputDir,
+                getSourceLevelsDir(MapSource.DISCORD),
+                levelId
+              );
+              await FileUtils.ensureDir(levelDir);
+
+              const datFileName = FileUtils.sanitizeFilename(path.basename(fileName));
+              const localDatPath = path.join(levelDir, datFileName);
+
+              // Save the .dat file
+              entry.pipe(fs.createWriteStream(localDatPath));
+              await new Promise((resolve, reject) => {
+                entry.on('end', resolve);
+                entry.on('error', reject);
+              });
+
+              // Extract level name from filename
+              const levelName = path.basename(datFileName, '.dat');
+              packMaps.push(levelName);
+
+              // Determine channel name based on known channel IDs
+              const knownChannels: Record<string, string> = {
+                '683985075704299520': 'levels-archive', // OLD text-only archived channel (until July 2023)
+                '1139908458968252457': 'community-levels', // CURRENT forum channel (August 2023 onwards, still active)
+              };
+              const channelName = knownChannels[channelId] || 'unknown-channel';
+
+              const metadata: LevelMetadata = {
+                id: levelId,
+                title: levelName,
+                author: message.author,
+                description: `Map ${mapIndex} from pack: ${packName}\n\n${message.content || `Level pack shared on Discord by ${message.author}`}`,
+                postedDate: new Date(message.timestamp),
+                source: MapSource.DISCORD,
+                sourceUrl: `https://discord.com/channels/${channelId}/${message.id}`,
+                originalId: `${message.id}-${mapIndex}`,
+                tags: ['discord', 'community', `discord-${channelName}`, 'map-pack', packName],
+                formatVersion: 'below-v1', // Discord levels are typically below v1
+                discordChannelId: channelId,
+                discordChannelName: channelName,
+              };
+
+              const levelFiles: LevelFile[] = [
+                {
+                  filename: datFileName,
+                  path: localDatPath,
+                  size: await FileUtils.getFileSize(localDatPath),
+                  hash: await FileUtils.getFileHash(localDatPath),
+                  type: 'dat' as const,
+                },
+              ];
+
+              const level: Level = {
+                metadata,
+                files: levelFiles,
+                catalogPath: levelDir,
+                datFilePath: localDatPath,
+                indexed: new Date(),
+                lastUpdated: new Date(),
+              };
+
+              // Save individual catalog
+              await FileUtils.writeJSON(path.join(levelDir, 'catalog.json'), level);
+              levels.push(level);
+
+              logger.info(`Extracted level from pack: ${levelName} (${mapIndex}/${packName})`);
+            } catch (error) {
+              logger.error(`Failed to process ${fileName} from zip:`, error);
+              entry.autodrain();
+            }
+          } else {
+            entry.autodrain();
+          }
+        });
+
+        zipStream.on('close', () => {
+          logger.info(`Processed ${levels.length} maps from pack: ${packName}`);
+          resolve();
+        });
+
+        zipStream.on('error', reject);
+      });
+
+      // If we have associated images, try to assign them to the first level
+      const associatedImages = this.findAssociatedImages(message);
+      if (associatedImages.length > 0 && levels.length > 0) {
+        logger.info(`Found ${associatedImages.length} image(s) for pack ${packName}`);
+        // Download images for the first level in the pack
+        for (const img of associatedImages) {
+          try {
+            const imageFileName = FileUtils.sanitizeFilename(img.filename);
+            const imagePath = path.join(path.dirname(levels[0].datFilePath), imageFileName);
+            await this.downloadFile(img.url, imagePath);
+
+            levels[0].files.push({
+              filename: imageFileName,
+              path: imagePath,
+              size: img.size,
+              type: this.isImageFile(img.filename) ? 'image' : 'other',
+            });
+
+            logger.info(`Downloaded pack image: ${imageFileName}`);
+          } catch (error) {
+            logger.error(`Failed to download pack image ${img.filename}:`, error);
+          }
+        }
+      }
+
+      return levels;
+    } catch (error) {
+      logger.error(`Failed to process Discord zip ${zipAttachment.filename}:`, error);
+      return levels;
+    } finally {
+      // Clean up temp directory
+      try {
+        await fs.remove(tempDir);
+      } catch (cleanupError) {
+        logger.warn(`Failed to clean up temp directory: ${tempDir}`, cleanupError);
+      }
     }
   }
 

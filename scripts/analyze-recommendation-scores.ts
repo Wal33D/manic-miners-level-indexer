@@ -89,7 +89,7 @@ async function analyzeRecommendationScores() {
   for (const group of report.duplicateGroups) {
     const recommendedId = DuplicateAnalyzer.recommendBestDuplicate(group);
     const recommended = group.levels.find(l => l.id === recommendedId);
-    if (recommended && recommended.source !== MapSource.MERGED) {
+    if (recommended) {
       recommendations[recommended.source]++;
     }
   }

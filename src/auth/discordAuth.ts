@@ -33,6 +33,9 @@ interface SessionData {
     sameSite: 'Strict' | 'Lax' | 'None';
   }>;
   localStorage: Record<string, string>;
+  token?: string;
+  userId?: string;
+  username?: string;
 }
 
 export class DiscordAuth {
@@ -91,19 +94,39 @@ export class DiscordAuth {
 
     if (email && password) {
       logger.info('Attempting automatic Discord login...');
-      // Try headless authentication first
-      try {
-        const result = await this.authenticateWithPlaywright(true, email, password);
-        if (result) {
-          return result;
+
+      // Try multiple headless authentication strategies
+      const headlessStrategies = [
+        { name: 'session-restore', useSession: true },
+        { name: 'standard-login', useSession: false },
+        { name: 'alternative-ua', useSession: false, alternativeUA: true },
+      ];
+
+      for (const strategy of headlessStrategies) {
+        try {
+          logger.info(`Trying headless strategy: ${strategy.name}`);
+          const result = await this.authenticateWithPlaywright(true, email, password, strategy);
+          if (result) {
+            logger.success(`Headless authentication succeeded with strategy: ${strategy.name}`);
+            return result;
+          }
+        } catch (error) {
+          logger.warn(`Headless strategy ${strategy.name} failed:`, error);
+          // Continue to next strategy
         }
-      } catch (error) {
-        logger.warn('Headless authentication failed, will try with visible browser', error);
       }
+
+      logger.warn('All headless authentication attempts failed');
     }
 
+    // Only show browser if we truly need manual intervention
+    logger.info('Manual intervention required - opening browser window...');
+    logger.info('This typically happens when:');
+    logger.info('- No saved session exists');
+    logger.info('- CAPTCHA verification is required');
+    logger.info('- Account requires additional security verification');
+
     // Fall back to manual login with visible browser
-    logger.info('Starting manual Discord login with visible browser...');
     return await this.authenticateWithPlaywright(false);
   }
 
@@ -203,7 +226,10 @@ export class DiscordAuth {
     }
   }
 
-  private async saveSession(context: BrowserContext): Promise<void> {
+  private async saveSession(
+    context: BrowserContext,
+    authResult?: { token?: string; userId?: string; username?: string }
+  ): Promise<void> {
     try {
       await fs.ensureDir(this.cacheDir);
 
@@ -226,6 +252,9 @@ export class DiscordAuth {
       const sessionData: SessionData = {
         cookies,
         localStorage,
+        token: authResult?.token,
+        userId: authResult?.userId,
+        username: authResult?.username,
       };
 
       // Encrypt session data
@@ -238,14 +267,21 @@ export class DiscordAuth {
     }
   }
 
-  private async loadSession(context: BrowserContext): Promise<boolean> {
+  private async loadSession(context: BrowserContext): Promise<SessionData | null> {
     try {
       if (!(await fs.pathExists(this.sessionFile))) {
-        return false;
+        return null;
       }
 
       const encryptedData = await fs.readFile(this.sessionFile, 'utf-8');
       const sessionData: SessionData = JSON.parse(this.decryptData(encryptedData));
+
+      // Check if session has a valid token
+      if (sessionData.token && (await this.validateToken(sessionData.token))) {
+        logger.info('Found valid token in saved session');
+        // Return the session data so we can use the token
+        return sessionData;
+      }
 
       // Restore cookies
       await context.addCookies(sessionData.cookies);
@@ -261,10 +297,10 @@ export class DiscordAuth {
       }, sessionData.localStorage);
 
       logger.info('Discord session restored successfully');
-      return true;
+      return sessionData;
     } catch (error) {
       logger.warn('Failed to load session:', error);
-      return false;
+      return null;
     }
   }
 
@@ -300,7 +336,8 @@ export class DiscordAuth {
   private async authenticateWithPlaywright(
     headless: boolean,
     email?: string,
-    password?: string
+    password?: string,
+    strategy?: { name: string; useSession?: boolean; alternativeUA?: boolean }
   ): Promise<AuthResult> {
     let retries = 0;
     let capturedToken: string | null = null;
@@ -329,7 +366,19 @@ export class DiscordAuth {
         this.page = await this.context.newPage();
 
         // Try to load existing session
-        const sessionLoaded = await this.loadSession(this.context);
+        const sessionData = await this.loadSession(this.context);
+
+        // Check if session has a valid token we can use immediately
+        if (sessionData?.token && headless) {
+          logger.info('Using token from saved session');
+          const result: AuthResult = {
+            token: sessionData.token,
+            userId: sessionData.userId,
+            username: sessionData.username,
+          };
+          await this.cacheToken(result);
+          return result;
+        }
 
         // Set up request interception to capture the token
         capturedToken = null; // Reset for this attempt
@@ -381,9 +430,11 @@ export class DiscordAuth {
         await this.page.goto('https://discord.com/login', { waitUntil: 'networkidle' });
 
         // Check if already logged in (from session or cookies)
-        const isLoggedIn = await this.page
-          .waitForSelector('[data-list-id="guildsnav"]', { timeout: 5000 })
-          .catch(() => null);
+        const isLoggedIn =
+          sessionData ||
+          (await this.page
+            .waitForSelector('[data-list-id="guildsnav"]', { timeout: 5000 })
+            .catch(() => null));
 
         if (isLoggedIn) {
           logger.info('Already logged in to Discord (session restored)');
@@ -439,7 +490,7 @@ export class DiscordAuth {
           } else if (loginResult === 'success') {
             logger.success('Successfully logged in to Discord automatically');
 
-            // Save session for future use
+            // Save session for future use (will capture token later)
             await this.saveSession(this.context);
           }
 
@@ -464,7 +515,7 @@ export class DiscordAuth {
 
           logger.success('Successfully logged in to Discord');
 
-          // Save session for future use
+          // Save session for future use (will capture token later)
           await this.saveSession(this.context);
 
           // Wait for page to stabilize
@@ -478,24 +529,114 @@ export class DiscordAuth {
           await this.page.waitForTimeout(2000);
         }
 
-        // If we still don't have a token, navigate to a channel to trigger API requests
+        // If we still don't have a token, try various extraction methods
         if (!capturedToken) {
-          logger.info('Token not captured yet, navigating to trigger API requests...');
+          logger.info('Token not captured yet, trying extraction methods...');
 
-          // Navigate to Discord app to trigger API calls
-          await this.page.goto('https://discord.com/channels/@me', { waitUntil: 'networkidle' });
-          await this.page.waitForTimeout(3000);
-
-          // Try clicking around to trigger API requests
+          // Method 1: Try to extract from localStorage
           try {
-            // Click on the user area to trigger user info requests
-            const userArea = await this.page.$('[class*="panels-"] [class*="container-"]');
-            if (userArea) {
-              await userArea.click();
-              await this.page.waitForTimeout(1000);
+            const localStorageToken = await this.page.evaluate(() => {
+              // Discord stores token in localStorage under various keys
+              const possibleKeys = ['token', 'tokens', 'user_token', 'auth_token'];
+
+              // Check direct keys
+              for (const key of possibleKeys) {
+                const value = localStorage.getItem(key);
+                if (value && value.length > 20) {
+                  return value;
+                }
+              }
+
+              // Check all localStorage items for token-like values
+              for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key) {
+                  const value = localStorage.getItem(key);
+                  if (value && value.length > 50 && value.match(/^[\w-]+\.[\w-]+\.[\w-]+$/)) {
+                    return value;
+                  }
+                }
+              }
+
+              return null;
+            });
+
+            if (localStorageToken) {
+              capturedToken = localStorageToken;
+              logger.info('Successfully extracted token from localStorage');
             }
           } catch (error) {
-            // Ignore errors here
+            logger.debug('localStorage extraction failed:', error);
+          }
+
+          // Method 2: Navigate to trigger API requests
+          if (!capturedToken) {
+            await this.page.goto('https://discord.com/channels/@me', { waitUntil: 'networkidle' });
+            await this.page.waitForTimeout(3000);
+
+            // Try clicking around to trigger API requests
+            try {
+              const userArea = await this.page.$('[class*="panels-"] [class*="container-"]');
+              if (userArea) {
+                await userArea.click();
+                await this.page.waitForTimeout(1000);
+              }
+            } catch (error) {
+              // Ignore errors here
+            }
+          }
+
+          // Method 3: Force API calls and intercept
+          if (!capturedToken) {
+            try {
+              // Execute multiple API calls to increase chances of token capture
+              await this.page.evaluate(() => {
+                // Force various API calls
+                fetch('/api/v9/users/@me', { credentials: 'include' }).catch(() => {});
+                fetch('/api/v9/users/@me/guilds', { credentials: 'include' }).catch(() => {});
+                fetch('/api/v9/users/@me/channels', { credentials: 'include' }).catch(() => {});
+
+                // Try to access the token from window properties
+                // @ts-expect-error - Discord's webpack internals for token access
+                if (window.webpackChunkdiscord_app) {
+                  try {
+                    // @ts-expect-error - Accessing Discord's internal webpack modules
+                    const modules: any = window.webpackChunkdiscord_app.push([
+                      [Symbol()],
+                      {},
+                      (e: any) => e,
+                    ]);
+                    const moduleValues = Object.values(modules.c || {}) as any[];
+                    const tokenModule = moduleValues.find(
+                      (m: any) => m?.exports?.default?.getToken
+                    );
+                    const token = tokenModule?.exports?.default?.getToken?.();
+                    if (token) {
+                      // Store in localStorage for extraction
+                      localStorage.setItem('extracted_token', token);
+                    }
+                  } catch (e) {
+                    // Ignore errors
+                  }
+                }
+              });
+
+              await this.page.waitForTimeout(2000);
+
+              // Try to get the extracted token
+              const extractedToken = await this.page.evaluate(() => {
+                const token = localStorage.getItem('extracted_token');
+                localStorage.removeItem('extracted_token');
+                return token;
+              });
+
+              if (extractedToken) {
+                capturedToken = extractedToken;
+                logger.info('Successfully extracted token using webpack method');
+              }
+            } catch (error) {
+              logger.debug('Advanced extraction methods failed:', error);
+            }
           }
         }
 
@@ -513,6 +654,9 @@ export class DiscordAuth {
 
         // Cache the token
         await this.cacheToken(result);
+
+        // Save session with the captured token for future headless use
+        await this.saveSession(this.context, result);
 
         logger.success(
           `Discord authentication successful! Token captured for user: ${username || userId || 'unknown'}`

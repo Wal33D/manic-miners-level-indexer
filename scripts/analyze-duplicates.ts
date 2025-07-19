@@ -2,7 +2,6 @@ import { DuplicateAnalyzer } from '../src/utils/duplicateAnalyzer';
 import { logger } from '../src/utils/logger';
 import { FileUtils } from '../src/utils/fileUtils';
 import { MapSource, DuplicateAnalysisReport, DuplicateGroup } from '../src/types';
-import { MergePreview } from '../src/utils/mergePreview';
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
@@ -66,7 +65,7 @@ function displayConsoleSummary(report: DuplicateAnalysisReport) {
   logger.info(`  Largest Duplicate Group: ${report.statistics.largestDuplicateGroup} copies`);
 
   logger.info(chalk.yellow('\n📂 By Source:'));
-  logger.info(chalk.gray('  (Pre-merge analysis - original sources only)'));
+  logger.info(chalk.gray('  (Duplicate analysis across all sources)'));
   for (const [source, stats] of Object.entries(report.statistics.bySource)) {
     const percentage =
       stats.total > 0 ? ((stats.duplicates / stats.total) * 100).toFixed(1) : '0.0';
@@ -76,11 +75,21 @@ function displayConsoleSummary(report: DuplicateAnalysisReport) {
   }
 }
 
-function displayDetailedDuplicates(report: DuplicateAnalysisReport, options: AnalyzeOptions) {
-  logger.info(chalk.yellow('\n🔍 Detailed Duplicate Groups (Will Be Merged):'));
+function getSourceEmoji(source: MapSource): string {
+  switch (source) {
+    case MapSource.ARCHIVE:
+      return '🏦';
+    case MapSource.DISCORD:
+      return '💬';
+    case MapSource.HOGNOSE:
+      return '🐍';
+    default:
+      return '📄';
+  }
+}
 
-  // Show merge benefits first
-  logger.info(MergePreview.getMergeBenefitsSummary());
+function displayDetailedDuplicates(report: DuplicateAnalysisReport, options: AnalyzeOptions) {
+  logger.info(chalk.yellow('\n🔍 Detailed Duplicate Groups:'));
 
   // Show top 10 duplicate groups
   const groupsToShow = Math.min(10, report.duplicateGroups.length);
@@ -90,11 +99,21 @@ function displayDetailedDuplicates(report: DuplicateAnalysisReport, options: Ana
 
   for (let i = 0; i < groupsToShow; i++) {
     const group = report.duplicateGroups[i];
-    logger.info(MergePreview.formatDuplicateGroupForMerge(group));
+    logger.info(chalk.cyan(`\n📄 Group ${i + 1}: "${group.levels[0].title}"`));
+    logger.info(`   Hash: ${group.hash}`);
+    logger.info(`   File Size: ${(group.fileSize / 1024).toFixed(1)} KB`);
+    logger.info(`   Duplicates: ${group.levels.length} copies\n`);
 
-    // Show merge preview
-    if (options.showDetails) {
-      logger.info(MergePreview.generatePreview(group));
+    for (const level of group.levels) {
+      logger.info(`   ${getSourceEmoji(level.source)} [${level.source.toUpperCase()}]`);
+      logger.info(`      Author: ${level.author}`);
+      logger.info(
+        `      Date: ${level.uploadDate ? new Date(level.uploadDate).toLocaleDateString() : 'Unknown'}`
+      );
+      if (options.showDetails && level.metadata.description) {
+        logger.info(`      Description: ${level.metadata.description.slice(0, 100)}...`);
+      }
+      logger.info('');
     }
   }
 
@@ -143,7 +162,7 @@ async function generateHTMLReport(report: DuplicateAnalysisReport, outputPath: s
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manic Miners Duplicate Analysis & Merge Report</title>
+  <title>Manic Miners Duplicate Analysis Report</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -223,7 +242,7 @@ async function generateHTMLReport(report: DuplicateAnalysisReport, outputPath: s
 <body>
   <h1>🔍 Manic Miners Duplicate Analysis Report</h1>
   <p>Generated on ${new Date(report.generatedAt).toLocaleString()}</p>
-  <p style="color: #666;">This is a pre-merge analysis showing duplicates across original sources (Archive, Discord, Hognose)</p>
+  <p style="color: #666;">This analysis shows duplicates across all sources (Archive, Discord, Hognose)</p>
 
   <div class="summary">
     <h2>Summary Statistics</h2>
@@ -282,19 +301,9 @@ async function generateHTMLReport(report: DuplicateAnalysisReport, outputPath: s
   </div>
 
   <div class="summary">
-    <h2>Duplicate Groups to Merge (${report.duplicateGroups.length} total)</h2>
+    <h2>Duplicate Groups (${report.duplicateGroups.length} total)</h2>
     <p>Cross-source duplicates: ${report.statistics.crossSourceDuplicates} groups<br>
        Within-source duplicates: ${report.statistics.withinSourceDuplicates} groups</p>
-    <div style="background-color: #e3f2fd; padding: 15px; border-radius: 6px; margin-top: 20px;">
-      <h3>🔀 Merge Process</h3>
-      <p>These duplicate groups will be intelligently merged to create a unified catalog with:</p>
-      <ul>
-        <li>Professional descriptions from Archive.org</li>
-        <li>Accurate timestamps from Discord</li>
-        <li>Author's original notes preserved</li>
-        <li>All unique metadata combined</li>
-      </ul>
-    </div>
   </div>
 
   ${report.duplicateGroups
@@ -304,20 +313,11 @@ async function generateHTMLReport(report: DuplicateAnalysisReport, outputPath: s
       const discordLevel = group.levels.find(l => l.source === 'discord');
       return `
       <div class="duplicate-group">
-        <h3>Group ${index + 1} - ${group.levels.length} sources will be merged (${(
+        <h3>Group ${index + 1} - ${group.levels.length} duplicates (${(
           group.fileSize / 1024
         ).toFixed(1)} KB)</h3>
         <div style="font-family: monospace; font-size: 0.8em; color: #666; margin-bottom: 10px;">
           Hash: ${group.hash.substring(0, 16)}...
-        </div>
-        <div style="background-color: #f0f8ff; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
-          <strong>🔀 These ${group.levels.length} sources will be merged</strong>
-          <br><small>A new unified entry will be created combining the best metadata from each source:</small>
-          <ul style="margin: 5px 0; padding-left: 20px; font-size: 0.9em;">
-            ${archiveLevel ? '<li>Professional description from Archive.org</li>' : ''}
-            ${discordLevel ? '<li>Accurate timestamps from Discord</li>' : ''}
-            ${group.levels.some(l => l.metadata.tags && l.metadata.tags.length > 0) ? '<li>Combined tags from all sources</li>' : ''}
-          </ul>
         </div>
         ${group.levels
           .map(

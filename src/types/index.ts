@@ -2,10 +2,7 @@ export enum MapSource {
   ARCHIVE = 'archive',
   DISCORD = 'discord',
   HOGNOSE = 'hognose',
-  MERGED = 'merged',
 }
-
-export type OriginalMapSource = Exclude<MapSource, MapSource.MERGED>;
 
 export interface LevelMetadata {
   id: string;
@@ -25,6 +22,8 @@ export interface LevelMetadata {
   downloadCount?: number;
   formatVersion?: 'below-v1' | 'v1' | 'v2' | 'unknown';
   releaseId?: string;
+  discordChannelId?: string;
+  discordChannelName?: string;
 }
 
 export interface LevelFile {

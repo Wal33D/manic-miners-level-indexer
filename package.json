@@ -44,7 +44,9 @@
     "validate:catalog": "ts-node scripts/utils/validate-full-catalog.ts",
     "migrate:versions": "ts-node src/scripts/migrateFormatVersions.ts",
     "analyze:duplicates": "ts-node scripts/analyze-duplicates.ts",
-    "merge:levels": "ts-node scripts/merge-duplicate-levels.ts"
+    "analyze:discord:channels": "ts-node scripts/analyze-discord-channels.ts",
+    "test:discord:channels": "ts-node scripts/test-discord-channel-extraction.ts",
+    "analyze:discord:servers": "ts-node scripts/analyze-discord-server-patterns.ts"
   },
   "keywords": [
     "manic-miners",
