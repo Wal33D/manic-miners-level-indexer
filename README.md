@@ -45,7 +45,32 @@ The indexer has successfully cataloged **1,241 community levels** from various s
 - batman1138: 96 levels
 - exkajer: 43 levels
 
-*Last updated: July 19, 2025*
+*Last updated: January 2025*
+
+## 🚧 Upcoming Features
+
+We're actively developing exciting new features to create the perfect index for the Manic Miners community:
+
+### 🎨 Map Renderer (In Design)
+- **Visual Thumbnails**: Generate preview images for every level
+- **Blueprint Generation**: Create detailed map layouts showing tiles and objects
+- **Multiple Formats**: Support for PNG, JPEG, WebP, and SVG outputs
+- **Batch Processing**: Efficient rendering of thousands of levels
+- [Read the design document](docs/MAP_RENDERER.md)
+
+### 📊 Level Profiler (In Design)
+- **Difficulty Analysis**: Objective complexity scoring (1-10 scale)
+- **Resource Counting**: Complete inventory of tiles, objects, and requirements
+- **Path Analysis**: Route complexity and navigation challenges
+- **Gameplay Predictions**: Estimated completion time and strategy hints
+- **Integration**: Uses user's specialized parsing package
+- [Read the design document](docs/LEVEL_PROFILER.md)
+
+### 🌐 Future Enhancements
+- **Web Interface**: Browse and search the catalog online
+- **GraphQL API**: Advanced querying capabilities
+- **Real-time Indexing**: Automatic updates as new levels are posted
+- **Community Features**: Ratings, reviews, and recommendations
 
 ## 📦 Quick Start
 
@@ -227,15 +252,27 @@ console.log(`Catalog exported to: ${exportPath}`);
 
 ## 📚 Documentation
 
+### Core Documentation
 - [Getting Started Guide](docs/GETTING_STARTED.md) - Detailed setup and first run
-- [Architecture Overview](docs/ARCHITECTURE.md) - System design and components
-- [API Reference](docs/API_REFERENCE.md) - Complete API documentation
-- [Indexers Guide](docs/INDEXERS.md) - Detailed indexer documentation
-- [Discord Authentication](docs/DISCORD_AUTHENTICATION.md) - Discord setup guide
 - [Configuration Reference](docs/CONFIGURATION.md) - All configuration options
-- [Output Structure](docs/OUTPUT_STRUCTURE.md) - File formats and schemas
+- [API Reference](docs/API_REFERENCE.md) - Complete API documentation
 - [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+
+### Architecture & Technical
+- [Architecture Overview](docs/ARCHITECTURE.md) - System design and components
+- [Indexers Guide](docs/INDEXERS.md) - Detailed indexer documentation
+- [Output Structure](docs/OUTPUT_STRUCTURE.md) - File formats and schemas
+- [Discord Authentication](docs/DISCORD_AUTHENTICATION.md) - Discord setup guide
+
+### Development & Operations
 - [Development Guide](docs/DEVELOPMENT.md) - Contributing and development
+- [Branch Protection](docs/BRANCH_PROTECTION.md) - Git workflow and PR process
+- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment instructions
+- [Improvement Plan](docs/IMPROVEMENT_PLAN.md) - Incremental improvement roadmap
+
+### Future Features
+- [Map Renderer Design](docs/MAP_RENDERER.md) - Visual thumbnail generation plans
+- [Level Profiler Design](docs/LEVEL_PROFILER.md) - Level analysis and profiling plans
 
 ## 🤝 Contributing
 
