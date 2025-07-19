@@ -780,7 +780,7 @@ export class DiscordUnifiedIndexer {
                 id: levelId,
                 title: levelName,
                 author: message.author,
-                description: `Map ${mapIndex} from pack: ${packName}\n\n${message.content || `Level pack shared on Discord by ${message.author}`}`,
+                description: `From pack: ${packName}\n\n${message.content || `Level pack shared on Discord by ${message.author}`}`,
                 postedDate: new Date(message.timestamp),
                 source: MapSource.DISCORD,
                 sourceUrl: `https://discord.com/channels/${channelId}/${message.id}`,
@@ -814,7 +814,19 @@ export class DiscordUnifiedIndexer {
               await FileUtils.writeJSON(path.join(levelDir, 'catalog.json'), level);
               levels.push(level);
 
-              logger.info(`Extracted level from pack: ${levelName} (${mapIndex}/${packName})`);
+              logger.info(`Extracted level from pack: ${levelName} (from ${packName})`);
+
+<system-reminder>
+The TodoWrite tool hasn't been used recently. If you're working on tasks that would benefit from tracking progress, consider using the TodoWrite tool to track progress. Only use it if it's relevant to the current work. This is just a gentle reminder - ignore if not applicable.
+
+
+Here are the existing contents of your todo list:
+
+[1. [completed] Clean output directories (high)
+2. [completed] Run Discord indexer test with zip support (high)
+3. [completed] Run full test suite (high)
+4. [completed] Analyze results and verify zip files are processed (high)]
+</system-reminder>
             } catch (error) {
               logger.error(`Failed to process ${fileName} from zip:`, error);
               entry.autodrain();
