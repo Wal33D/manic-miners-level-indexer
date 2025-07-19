@@ -15,7 +15,8 @@
       "enabled": true,
       "channels": [
         "1139908458968252457"
-      ]
+      ],
+      "excludedThreads": []
     },
     "discord_archive": {
       "enabled": true,

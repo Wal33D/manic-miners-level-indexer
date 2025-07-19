@@ -38,7 +38,8 @@ export class MasterIndexer {
       this.discordCommunityIndexer = new DiscordUnifiedIndexer(
         config.sources.discord_community.channels,
         config.outputDir,
-        MapSource.DISCORD_COMMUNITY
+        MapSource.DISCORD_COMMUNITY,
+        config.sources.discord_community.excludedThreads
       );
     }
 
@@ -46,7 +47,8 @@ export class MasterIndexer {
       this.discordArchiveIndexer = new DiscordUnifiedIndexer(
         config.sources.discord_archive.channels,
         config.outputDir,
-        MapSource.DISCORD_ARCHIVE
+        MapSource.DISCORD_ARCHIVE,
+        config.sources.discord_archive.excludedThreads
       );
     }
   }
@@ -64,68 +66,93 @@ export class MasterIndexer {
       let totalProcessed = 0;
       let totalErrors = 0;
 
-      // Index from all enabled sources
+      // Create array of indexing promises
+      const indexingPromises: Promise<{ source: string; result: any }>[] = [];
+
+      // Add Internet Archive indexer
       if (this.internetArchiveIndexer) {
         logger.info('Starting improved Internet Archive indexing (V2)...');
-        const result = await this.internetArchiveIndexer.indexArchive(progress => {
-          logger.progress(progress.message, progress.current, progress.total);
-        });
-
-        if (result.success) {
-          logger.success(`Archive indexing completed: ${result.levelsProcessed} levels processed`);
-          totalProcessed += result.levelsProcessed;
-        } else {
-          logger.error(`Archive indexing failed with ${result.errors.length} errors`);
-          totalErrors += result.errors.length;
-        }
+        indexingPromises.push(
+          this.internetArchiveIndexer.indexArchive(progress => {
+            logger.progress(`[Internet Archive] ${progress.message}`, progress.current, progress.total);
+          }).then(result => ({ source: 'Internet Archive', result }))
+        );
       }
 
+      // Add Hognose indexer
       if (this.hognoseIndexer) {
         logger.info('Starting Hognose indexing...');
-        const result = await this.hognoseIndexer.indexHognose(progress => {
-          logger.progress(progress.message, progress.current, progress.total);
-        });
+        indexingPromises.push(
+          this.hognoseIndexer.indexHognose(progress => {
+            logger.progress(`[Hognose] ${progress.message}`, progress.current, progress.total);
+          }).then(result => ({ source: 'Hognose', result }))
+        );
+      }
 
-        if (result.success) {
-          logger.success(`Hognose indexing completed: ${result.levelsProcessed} levels processed`);
-          totalProcessed += result.levelsProcessed;
-        } else {
-          logger.error(`Hognose indexing failed with ${result.errors.length} errors`);
-          totalErrors += result.errors.length;
+      // Handle Discord authentication once for both indexers
+      if (this.discordCommunityIndexer || this.discordArchiveIndexer) {
+        logger.info('Authenticating with Discord...');
+        
+        // Create a shared auth provider
+        const { DiscordAuth } = await import('../auth/discordAuth');
+        const discordAuth = new DiscordAuth();
+        
+        try {
+          // Get token once
+          const authResult = await discordAuth.getToken();
+          
+          if (authResult.token) {
+            logger.success('Discord authentication successful!');
+            
+            // Share the token with both indexers
+            if (this.discordCommunityIndexer) {
+              logger.info('Starting Discord Community indexing...');
+              // Set the token before indexing
+              this.discordCommunityIndexer.setToken(authResult.token);
+              indexingPromises.push(
+                this.discordCommunityIndexer.indexDiscord(progress => {
+                  logger.progress(`[Discord Community] ${progress.message}`, progress.current, progress.total);
+                }).then(result => ({ source: 'Discord Community', result }))
+              );
+            }
+
+            if (this.discordArchiveIndexer) {
+              logger.info('Starting Discord Archive indexing...');
+              // Set the token before indexing
+              this.discordArchiveIndexer.setToken(authResult.token);
+              indexingPromises.push(
+                this.discordArchiveIndexer.indexDiscord(progress => {
+                  logger.progress(`[Discord Archive] ${progress.message}`, progress.current, progress.total);
+                }).then(result => ({ source: 'Discord Archive', result }))
+              );
+            }
+          } else {
+            logger.error('Discord authentication failed - skipping Discord indexers');
+          }
+        } catch (error) {
+          logger.error('Discord authentication error:', error);
+          logger.warn('Skipping Discord indexers due to authentication failure');
         }
       }
 
-      if (this.discordCommunityIndexer) {
-        logger.info('Starting Discord Community indexing...');
-        const result = await this.discordCommunityIndexer.indexDiscord(progress => {
-          logger.progress(progress.message, progress.current, progress.total);
-        });
+      // Run all indexers simultaneously
+      logger.info(`Running ${indexingPromises.length} indexers simultaneously...`);
+      const results = await Promise.allSettled(indexingPromises);
 
-        if (result.success) {
-          logger.success(
-            `Discord Community indexing completed: ${result.levelsProcessed} levels processed`
-          );
-          totalProcessed += result.levelsProcessed;
+      // Process results
+      for (const promiseResult of results) {
+        if (promiseResult.status === 'fulfilled') {
+          const { source, result } = promiseResult.value;
+          if (result.success) {
+            logger.success(`${source} indexing completed: ${result.levelsProcessed} levels processed`);
+            totalProcessed += result.levelsProcessed;
+          } else {
+            logger.error(`${source} indexing failed with ${result.errors.length} errors`);
+            totalErrors += result.errors.length;
+          }
         } else {
-          logger.error(`Discord Community indexing failed with ${result.errors.length} errors`);
-          totalErrors += result.errors.length;
-        }
-      }
-
-      if (this.discordArchiveIndexer) {
-        logger.info('Starting Discord Archive indexing...');
-        const result = await this.discordArchiveIndexer.indexDiscord(progress => {
-          logger.progress(progress.message, progress.current, progress.total);
-        });
-
-        if (result.success) {
-          logger.success(
-            `Discord Archive indexing completed: ${result.levelsProcessed} levels processed`
-          );
-          totalProcessed += result.levelsProcessed;
-        } else {
-          logger.error(`Discord Archive indexing failed with ${result.errors.length} errors`);
-          totalErrors += result.errors.length;
+          logger.error('Indexer promise rejected:', promiseResult.reason);
+          totalErrors++;
         }
       }
 

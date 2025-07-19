@@ -76,10 +76,12 @@ export interface IndexerConfig {
     discord_community: {
       enabled: boolean;
       channels: string[];
+      excludedThreads?: string[];
     };
     discord_archive: {
       enabled: boolean;
       channels: string[];
+      excludedThreads?: string[];
     };
     hognose: {
       enabled: boolean;

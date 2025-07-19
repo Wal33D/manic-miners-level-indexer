@@ -58,16 +58,37 @@ export class DiscordUnifiedIndexer {
   private headers: Record<string, string> = {};
   private discordAuth: DiscordAuth;
   private messageCache: Map<string, DiscordMessage> = new Map(); // Cache for associating images
+  private excludedThreads: Set<string>;
 
-  constructor(channels: string[], outputDir: string, source: MapSource) {
+  constructor(channels: string[], outputDir: string, source: MapSource, excludedThreads?: string[]) {
     this.channels = channels;
     this.outputDir = outputDir;
     this.source = source;
     this.discordAuth = new DiscordAuth(path.join(outputDir, '.auth'));
+    this.excludedThreads = new Set(excludedThreads || []);
+  }
+
+  setToken(token: string): void {
+    this.token = token;
+    // Set up headers with the provided token
+    this.headers = {
+      Authorization: this.token,
+      'User-Agent':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
   }
 
   async initialize(): Promise<void> {
     try {
+      // Skip authentication if token is already set
+      if (this.token) {
+        logger.info('Using pre-authenticated Discord token');
+        await this.testToken();
+        return;
+      }
+
       // Get token using the auth module
       const authResult = await this.discordAuth.getToken();
       this.token = authResult.token;
@@ -259,6 +280,11 @@ export class DiscordUnifiedIndexer {
 
             // Process each thread
             for (const thread of threads) {
+              // Check if thread is excluded
+              if (this.excludedThreads.has(thread.id)) {
+                logger.info(`Skipping excluded thread: ${thread.name} (${thread.id})`);
+                continue;
+              }
               logger.info(`Processing thread: ${thread.name}`);
               const threadMessages = await this.fetchThreadMessages(thread.id);
               messages.push(...threadMessages);
@@ -294,6 +320,11 @@ export class DiscordUnifiedIndexer {
             logger.info(`Found ${activeThreads.length} active threads via search`);
 
             for (const thread of activeThreads) {
+              // Check if thread is excluded
+              if (this.excludedThreads.has(thread.id)) {
+                logger.info(`Skipping excluded active thread: ${thread.name} (${thread.id})`);
+                continue;
+              }
               logger.info(`Processing active thread: ${thread.name}`);
               const threadMessages = await this.fetchThreadMessages(thread.id);
               messages.push(...threadMessages);
