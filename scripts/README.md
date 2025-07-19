@@ -2,59 +2,64 @@
 
 This directory contains various scripts for running and managing the Manic Miners Level Indexer.
 
-## Main Scripts (Production)
+## Main Indexing Scripts
 
-- **index-all.ts** - Run all indexers (Internet Archive, Discord, Hognose)
+- **index-all.ts** - Run all indexers (Internet Archive, Discord Community, Discord Archive, Hognose)
 - **index-internet-archive.ts** - Index levels from Internet Archive only
-- **index-discord-community.ts** - Index levels from Discord Community forum channel
-- **index-discord-archive.ts** - Index levels from Discord Archive channel
+- **index-discord-community.ts** - Index levels from Discord Community forum channel (v1+ maps)
+- **index-discord-archive.ts** - Index levels from Discord Archive channel (pre-v1 maps)
 - **index-hognose.ts** - Index levels from Hognose GitHub releases only
 
-## test/ Directory (Development/Testing)
+## Test Scripts
 
-Contains test scripts for validating individual components:
-- Discord authentication tests
-- Discord API pagination tests
-- Image download tests
-- Small-scale indexing tests
+- **run-full-test-suite.ts** - Run the complete test suite for all indexers
+- **test/test-discord-auto-login.ts** - Test Discord authentication with session persistence
 
-## utils/ Directory (Utilities)
+## Utility Scripts
 
-Contains utility and analysis scripts:
-- **analyze-dat-format.ts** - Analyze DAT file format versions
-- **build-discord-catalog.ts** - Build Discord catalog from messages
-- **check-active-threads.ts** - Check active Discord threads
-- **clean-test-outputs.ts** - Clean up test output files
-- **count-both-channels.ts** - Count messages in Discord channels
-- **count-discord-threads.ts** - Count Discord threads
-- **find-rage-road.ts** - Search for specific level
-- **rebuild-catalog.ts** - Rebuild the master catalog index
-- **show-output-structure.ts** - Display output directory structure
-- **validate-full-catalog.ts** - Validate the complete catalog
+- **utils/clean-test-outputs.ts** - Clean up test output directories
+- **utils/rebuild-catalog.ts** - Rebuild the master catalog index from existing data
+- **utils/validate-full-catalog.ts** - Validate the complete catalog for integrity
 
 ## Usage
 
-All scripts can be run using:
-```bash
-npm run script <script-name>
-```
+All scripts can be run using npm scripts defined in package.json:
 
-Or directly with tsx:
-```bash
-npx tsx scripts/<script-name>.ts
-```
-
-For example:
 ```bash
 # Run all indexers
 npm run index
 
-# Run Discord Community indexer
+# Run individual indexers
+npm run index:internet-archive
 npm run index:discord:community
-
-# Run Discord Archive indexer
 npm run index:discord:archive
+npm run index:hognose
 
-# Validate the catalog
-npx tsx scripts/utils/validate-full-catalog.ts
+# Run tests
+npm run test:full
+npm run test:discord:auth
+
+# Run utilities
+npm run clean:test
+npm run rebuild:catalog
+npm run validate:catalog
+```
+
+Or run directly with ts-node:
+```bash
+npx ts-node scripts/index-all.ts
+npx ts-node scripts/utils/validate-full-catalog.ts
+```
+
+## Output Structure
+
+All indexers output to the following directory structure:
+```
+output/
+├── levels-internet-archive/  # Internet Archive levels
+├── levels-discord-community/ # Discord Community levels (v1+)
+├── levels-discord-archive/   # Discord Archive levels (pre-v1)
+├── levels-hognose/          # Hognose GitHub releases
+├── catalog_index.json       # Individual source catalogs
+└── master_index.json        # Combined master catalog
 ```
