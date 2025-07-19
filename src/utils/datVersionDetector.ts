@@ -15,8 +15,9 @@ export class DatVersionDetector {
    */
   static getVersionBySource(source: MapSource): 'below-v1' | 'v1' | 'v2' | 'unknown' {
     switch (source) {
-      case MapSource.ARCHIVE:
-      case MapSource.DISCORD:
+      case MapSource.INTERNET_ARCHIVE:
+      case MapSource.DISCORD_COMMUNITY:
+      case MapSource.DISCORD_ARCHIVE:
         // Levels from archive.org or discord are below v1
         return 'below-v1';
       case MapSource.HOGNOSE:

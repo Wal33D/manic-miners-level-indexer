@@ -88,7 +88,6 @@ class MasterIndexer {
 Manages the level catalog:
 - Creates and updates catalog indexes
 - Maintains source-specific catalogs
-- Handles level deduplication
 - Provides search and filter capabilities
 
 ### 4. Authentication System

@@ -52,15 +52,17 @@ export class DiscordUnifiedIndexer {
   private token?: string;
   private channels: string[];
   private outputDir: string;
+  private source: MapSource;
   private processedMessages: Set<string> = new Set();
   private processedHashes: Map<string, string> = new Map();
   private headers: Record<string, string> = {};
   private discordAuth: DiscordAuth;
   private messageCache: Map<string, DiscordMessage> = new Map(); // Cache for associating images
 
-  constructor(channels: string[], outputDir: string) {
+  constructor(channels: string[], outputDir: string, source: MapSource) {
     this.channels = channels;
     this.outputDir = outputDir;
+    this.source = source;
     this.discordAuth = new DiscordAuth(path.join(outputDir, '.auth'));
   }
 
@@ -134,7 +136,7 @@ export class DiscordUnifiedIndexer {
 
         progressCallback?.({
           phase: 'scraping',
-          source: MapSource.DISCORD,
+          source: this.source,
           current: channelIndex,
           total: this.channels.length,
           message: `Fetching channel ${channelIndex + 1}/${this.channels.length}...`,
@@ -144,7 +146,7 @@ export class DiscordUnifiedIndexer {
 
         progressCallback?.({
           phase: 'downloading',
-          source: MapSource.DISCORD,
+          source: this.source,
           current: 0,
           total: channelMessages.length,
           message: `Processing ${channelMessages.length} messages from channel...`,
@@ -176,7 +178,7 @@ export class DiscordUnifiedIndexer {
 
           progressCallback?.({
             phase: 'downloading',
-            source: MapSource.DISCORD,
+            source: this.source,
             current: i + 1,
             total: channelMessages.length,
             message: `Processing message ${i + 1}/${channelMessages.length}...`,
@@ -602,7 +604,7 @@ export class DiscordUnifiedIndexer {
   ): Promise<Level | null> {
     try {
       const levelId = FileUtils.generateUniqueId();
-      const levelDir = path.join(this.outputDir, getSourceLevelsDir(MapSource.DISCORD), levelId);
+      const levelDir = path.join(this.outputDir, getSourceLevelsDir(this.source), levelId);
       await FileUtils.ensureDir(levelDir);
 
       const datFileName = FileUtils.sanitizeFilename(datAttachment.filename);
@@ -621,16 +623,22 @@ export class DiscordUnifiedIndexer {
       };
       const channelName = knownChannels[channelId] || 'unknown-channel';
 
+      // Determine tags based on source
+      const tags =
+        this.source === MapSource.DISCORD_COMMUNITY
+          ? ['discord', 'community', `discord-${channelName}`]
+          : ['discord', 'archive', `discord-${channelName}`];
+
       const metadata: LevelMetadata = {
         id: levelId,
         title: levelName,
         author: message.author,
         description: message.content || `Level shared on Discord by ${message.author}`,
         postedDate: new Date(message.timestamp),
-        source: MapSource.DISCORD,
+        source: this.source,
         sourceUrl: `https://discord.com/channels/${channelId}/${message.id}`,
         originalId: message.id,
-        tags: ['discord', 'community', `discord-${channelName}`],
+        tags,
         formatVersion: 'below-v1', // Discord levels are typically below v1
         discordChannelId: channelId,
         discordChannelName: channelName,
@@ -748,11 +756,7 @@ export class DiscordUnifiedIndexer {
             try {
               mapIndex++;
               const levelId = FileUtils.generateUniqueId();
-              const levelDir = path.join(
-                this.outputDir,
-                getSourceLevelsDir(MapSource.DISCORD),
-                levelId
-              );
+              const levelDir = path.join(this.outputDir, getSourceLevelsDir(this.source), levelId);
               await FileUtils.ensureDir(levelDir);
 
               const datFileName = FileUtils.sanitizeFilename(path.basename(fileName));
@@ -776,16 +780,22 @@ export class DiscordUnifiedIndexer {
               };
               const channelName = knownChannels[channelId] || 'unknown-channel';
 
+              // Determine tags based on source
+              const tags =
+                this.source === MapSource.DISCORD_COMMUNITY
+                  ? ['discord', 'community', `discord-${channelName}`, 'map-pack', packName]
+                  : ['discord', 'archive', `discord-${channelName}`, 'map-pack', packName];
+
               const metadata: LevelMetadata = {
                 id: levelId,
                 title: levelName,
                 author: message.author,
                 description: `From pack: ${packName}\n\n${message.content || `Level pack shared on Discord by ${message.author}`}`,
                 postedDate: new Date(message.timestamp),
-                source: MapSource.DISCORD,
+                source: this.source,
                 sourceUrl: `https://discord.com/channels/${channelId}/${message.id}`,
                 originalId: `${message.id}-${mapIndex}`,
-                tags: ['discord', 'community', `discord-${channelName}`, 'map-pack', packName],
+                tags,
                 formatVersion: 'below-v1', // Discord levels are typically below v1
                 discordChannelId: channelId,
                 discordChannelName: channelName,
@@ -815,18 +825,6 @@ export class DiscordUnifiedIndexer {
               levels.push(level);
 
               logger.info(`Extracted level from pack: ${levelName} (from ${packName})`);
-
-<system-reminder>
-The TodoWrite tool hasn't been used recently. If you're working on tasks that would benefit from tracking progress, consider using the TodoWrite tool to track progress. Only use it if it's relevant to the current work. This is just a gentle reminder - ignore if not applicable.
-
-
-Here are the existing contents of your todo list:
-
-[1. [completed] Clean output directories (high)
-2. [completed] Run Discord indexer test with zip support (high)
-3. [completed] Run full test suite (high)
-4. [completed] Analyze results and verify zip files are processed (high)]
-</system-reminder>
             } catch (error) {
               logger.error(`Failed to process ${fileName} from zip:`, error);
               entry.autodrain();
@@ -894,7 +892,8 @@ Here are the existing contents of your todo list:
   }
 
   private async loadProcessedMessages(): Promise<void> {
-    const processedPath = path.join(this.outputDir, 'discord_processed.json');
+    const sourceKey = this.source.toLowerCase().replace('_', '-');
+    const processedPath = path.join(this.outputDir, `${sourceKey}_processed.json`);
     const processed = await FileUtils.readJSON<string[]>(processedPath);
 
     if (processed) {
@@ -903,12 +902,14 @@ Here are the existing contents of your todo list:
   }
 
   private async saveProcessedMessages(): Promise<void> {
-    const processedPath = path.join(this.outputDir, 'discord_processed.json');
+    const sourceKey = this.source.toLowerCase().replace('_', '-');
+    const processedPath = path.join(this.outputDir, `${sourceKey}_processed.json`);
     await FileUtils.writeJSON(processedPath, Array.from(this.processedMessages));
   }
 
   private async loadProcessedHashes(): Promise<void> {
-    const hashesPath = path.join(this.outputDir, 'discord_hashes.json');
+    const sourceKey = this.source.toLowerCase().replace('_', '-');
+    const hashesPath = path.join(this.outputDir, `${sourceKey}_hashes.json`);
     const hashes = await FileUtils.readJSON<Record<string, string>>(hashesPath);
 
     if (hashes) {
@@ -917,7 +918,8 @@ Here are the existing contents of your todo list:
   }
 
   private async saveProcessedHashes(): Promise<void> {
-    const hashesPath = path.join(this.outputDir, 'discord_hashes.json');
+    const sourceKey = this.source.toLowerCase().replace('_', '-');
+    const hashesPath = path.join(this.outputDir, `${sourceKey}_hashes.json`);
     const hashesObj = Object.fromEntries(this.processedHashes);
     await FileUtils.writeJSON(hashesPath, hashesObj);
   }

@@ -231,7 +231,7 @@ export class OutputValidator {
     const warnings: string[] = [];
 
     switch (level.metadata.source) {
-      case MapSource.ARCHIVE:
+      case MapSource.INTERNET_ARCHIVE:
         if (!level.metadata.sourceUrl?.includes('archive.org')) {
           warnings.push('Archive.org level missing proper sourceUrl');
         }
@@ -240,7 +240,8 @@ export class OutputValidator {
         }
         break;
 
-      case MapSource.DISCORD:
+      case MapSource.DISCORD_COMMUNITY:
+      case MapSource.DISCORD_ARCHIVE:
         if (!level.metadata.sourceUrl?.includes('discord.com')) {
           warnings.push('Discord level missing proper sourceUrl');
         }

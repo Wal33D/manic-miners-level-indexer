@@ -1,7 +1,7 @@
 {
   "outputDir": "./output",
   "sources": {
-    "archive": {
+    "internet_archive": {
       "enabled": true,
       "baseUrl": "https://archive.org/advancedsearch.php",
       "concurrentDownloads": 5,
@@ -11,11 +11,16 @@
         "to": "2024-12-31"
       }
     },
-    "discord": {
+    "discord_community": {
       "enabled": true,
       "channels": [
-        "683985075704299520",
         "1139908458968252457"
+      ]
+    },
+    "discord_archive": {
+      "enabled": true,
+      "channels": [
+        "683985075704299520"
       ]
     },
     "hognose": {

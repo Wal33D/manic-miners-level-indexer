@@ -73,7 +73,7 @@ async function testArchiveIndexer() {
   }
 
   // Check what was downloaded
-  const levelsDir = path.join(outputDir, getSourceLevelsDir(MapSource.ARCHIVE));
+  const levelsDir = path.join(outputDir, getSourceLevelsDir(MapSource.INTERNET_ARCHIVE));
   if (await fs.pathExists(levelsDir)) {
     const allEntries = await fs.readdir(levelsDir);
     // Filter out non-directories
@@ -127,7 +127,10 @@ async function testArchiveIndexer() {
   // Validate output
   logger.info('\n=== Validating Output ===');
   const validator = new OutputValidator();
-  const { results, summary } = await validator.validateDirectory(outputDir, MapSource.ARCHIVE);
+  const { results, summary } = await validator.validateDirectory(
+    outputDir,
+    MapSource.INTERNET_ARCHIVE
+  );
 
   logger.info(validator.formatSummary(summary));
 

@@ -75,7 +75,8 @@ async function analyzeDiscordChannels() {
       });
     }
 
-    const channelInfo = channelMap.get(channelKey)!;
+    const channelInfo = channelMap.get(channelKey);
+    if (!channelInfo) continue;
     channelInfo.levelCount++;
     channelInfo.levels.push({
       id: level.metadata.id,

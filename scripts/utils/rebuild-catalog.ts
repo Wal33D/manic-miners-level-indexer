@@ -9,7 +9,7 @@ import path from 'path';
 
 dotenv.config();
 
-const OUTPUT_DIR = path.join(process.cwd(), 'data');
+const OUTPUT_DIR = path.join(process.cwd(), 'output');
 
 async function rebuildCatalog() {
   try {
@@ -29,38 +29,24 @@ async function rebuildCatalog() {
 
     logger.info(`\n=== Catalog Summary ===`);
     logger.info(`Total levels: ${stats.totalLevels}`);
-    logger.info(`  - Archive: ${stats.sources[MapSource.ARCHIVE]}`);
-    logger.info(`  - Discord: ${stats.sources[MapSource.DISCORD]}`);
-    logger.info(`  - Hognose: ${stats.sources[MapSource.HOGNOSE]}`);
+    logger.info(`  - Internet Archive: ${stats.sources[MapSource.INTERNET_ARCHIVE] || 0}`);
+    logger.info(`  - Discord Community: ${stats.sources[MapSource.DISCORD_COMMUNITY] || 0}`);
+    logger.info(`  - Discord Archive: ${stats.sources[MapSource.DISCORD_ARCHIVE] || 0}`);
+    logger.info(`  - Hognose: ${stats.sources[MapSource.HOGNOSE] || 0}`);
 
     // Get Discord-specific stats
-    const discordLevels = await catalogManager.getLevelsBySource(MapSource.DISCORD);
+    const discordCommunityLevels = await catalogManager.getLevelsBySource(
+      MapSource.DISCORD_COMMUNITY
+    );
+    const discordArchiveLevels = await catalogManager.getLevelsBySource(MapSource.DISCORD_ARCHIVE);
+    const allDiscordLevels = [...discordCommunityLevels, ...discordArchiveLevels];
 
-    // Analyze Discord levels by channel
+    // Analyze Discord levels
     logger.info('\n=== Discord Level Analysis ===');
-    const channelStats = new Map<string, number>();
-    const oldChannelId = '683985075704299520';
-    const forumChannelId = '1139908458968252457';
-    let oldChannelCount = 0;
-    let forumChannelCount = 0;
-
-    for (const level of discordLevels) {
-      // The sourceUrl format is https://discord.com/channels/{messageId}
-      // We need to check the original message ID to determine the channel
-      const messageId = level.metadata.originalId;
-
-      // For old channel messages, IDs are typically lower
-      // This is a heuristic based on Discord's snowflake ID system
-      if (messageId && BigInt(messageId) < BigInt('1000000000000000000')) {
-        oldChannelCount++;
-      } else {
-        forumChannelCount++;
-      }
-    }
-
-    logger.info(`Discord levels by channel (estimated):`);
-    logger.info(`  - Old pre-v1 maps: ~${oldChannelCount} levels`);
-    logger.info(`  - Community forum: ~${forumChannelCount} levels`);
+    logger.info(`Discord levels by source:`);
+    logger.info(`  - Discord Community: ${discordCommunityLevels.length} levels`);
+    logger.info(`  - Discord Archive: ${discordArchiveLevels.length} levels`);
+    logger.info(`  - Total Discord: ${allDiscordLevels.length} levels`);
 
     // Generate master index
     logger.info('\nGenerating master index file...');
@@ -71,15 +57,16 @@ async function rebuildCatalog() {
       sources: stats.sources,
       lastUpdated: stats.lastUpdated,
       discordStats: {
-        total: stats.sources[MapSource.DISCORD],
-        oldChannel: oldChannelCount,
-        forumChannel: forumChannelCount,
+        total: allDiscordLevels.length,
+        community: discordCommunityLevels.length,
+        archive: discordArchiveLevels.length,
       },
       structure: {
         catalogIndex: CATALOG_FILENAMES.INDEX,
         sourceDirs: {
-          archive: getSourceLevelsDir(MapSource.ARCHIVE),
-          discord: getSourceLevelsDir(MapSource.DISCORD),
+          internet_archive: getSourceLevelsDir(MapSource.INTERNET_ARCHIVE),
+          discord_community: getSourceLevelsDir(MapSource.DISCORD_COMMUNITY),
+          discord_archive: getSourceLevelsDir(MapSource.DISCORD_ARCHIVE),
           hognose: getSourceLevelsDir(MapSource.HOGNOSE),
         },
       },
@@ -109,7 +96,7 @@ async function rebuildCatalog() {
 
     // Sample some Discord levels
     logger.info('\n=== Sample Discord Levels ===');
-    const recentDiscordLevels = discordLevels
+    const recentDiscordLevels = allDiscordLevels
       .sort((a, b) => b.metadata.postedDate.getTime() - a.metadata.postedDate.getTime())
       .slice(0, 5);
 
@@ -123,7 +110,10 @@ async function rebuildCatalog() {
     logger.info('\nCatalog files:');
     logger.info(`  - ${path.join(OUTPUT_DIR, CATALOG_FILENAMES.INDEX)} - Main catalog index`);
     logger.info(
-      `  - ${path.join(OUTPUT_DIR, getSourceLevelsDir(MapSource.DISCORD), CATALOG_FILENAMES.INDEX)} - Discord-specific index`
+      `  - ${path.join(OUTPUT_DIR, getSourceLevelsDir(MapSource.DISCORD_COMMUNITY), CATALOG_FILENAMES.INDEX)} - Discord Community index`
+    );
+    logger.info(
+      `  - ${path.join(OUTPUT_DIR, getSourceLevelsDir(MapSource.DISCORD_ARCHIVE), CATALOG_FILENAMES.INDEX)} - Discord Archive index`
     );
     logger.info(`  - ${masterIndexPath} - Master index with statistics`);
   } catch (error) {

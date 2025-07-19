@@ -56,9 +56,12 @@ export class FormatVersionMigrator {
   }
 
   private getSourceFromDir(sourceDir: string): MapSource | null {
-    if (sourceDir.includes('archive')) return MapSource.ARCHIVE;
+    if (sourceDir.includes('internet-archive')) return MapSource.INTERNET_ARCHIVE;
+    if (sourceDir.includes('archive')) return MapSource.INTERNET_ARCHIVE; // backward compatibility
     if (sourceDir.includes('hognose')) return MapSource.HOGNOSE;
-    if (sourceDir.includes('discord')) return MapSource.DISCORD;
+    if (sourceDir.includes('discord-community')) return MapSource.DISCORD_COMMUNITY;
+    if (sourceDir.includes('discord-archive')) return MapSource.DISCORD_ARCHIVE;
+    if (sourceDir.includes('discord')) return MapSource.DISCORD_COMMUNITY; // backward compatibility
     return null;
   }
 

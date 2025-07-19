@@ -600,16 +600,13 @@ export class DiscordAuth {
                 // @ts-expect-error - Discord's webpack internals for token access
                 if (window.webpackChunkdiscord_app) {
                   try {
-                    // @ts-expect-error - Accessing Discord's internal webpack modules
-                    const modules: any = window.webpackChunkdiscord_app.push([
-                      [Symbol()],
-                      {},
-                      (e: any) => e,
-                    ]);
-                    const moduleValues = Object.values(modules.c || {}) as any[];
-                    const tokenModule = moduleValues.find(
-                      (m: any) => m?.exports?.default?.getToken
-                    );
+                    const modules: { c?: Record<string, unknown> } =
+                      // @ts-expect-error - Accessing Discord's internal webpack modules
+                      window.webpackChunkdiscord_app.push([[Symbol()], {}, (e: unknown) => e]);
+                    const moduleValues = Object.values(modules.c || {}) as Array<{
+                      exports?: { default?: { getToken?: () => string } };
+                    }>;
+                    const tokenModule = moduleValues.find(m => m?.exports?.default?.getToken);
                     const token = tokenModule?.exports?.default?.getToken?.();
                     if (token) {
                       // Store in localStorage for extraction

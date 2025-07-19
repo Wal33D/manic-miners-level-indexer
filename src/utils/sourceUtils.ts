@@ -5,10 +5,12 @@ import { MapSource } from '../types';
  */
 export function getSourceLevelsDir(source: MapSource): string {
   switch (source) {
-    case MapSource.ARCHIVE:
-      return 'levels-archive';
-    case MapSource.DISCORD:
-      return 'levels-discord';
+    case MapSource.INTERNET_ARCHIVE:
+      return 'levels-internet-archive';
+    case MapSource.DISCORD_COMMUNITY:
+      return 'levels-discord-community';
+    case MapSource.DISCORD_ARCHIVE:
+      return 'levels-discord-archive';
     case MapSource.HOGNOSE:
       return 'levels-hognose';
     default:

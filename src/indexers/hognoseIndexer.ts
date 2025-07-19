@@ -35,6 +35,7 @@ export class HognoseIndexer {
   private githubRepo: string;
   private outputDir: string;
   private processedReleases: Set<string> = new Set();
+  private catalogManager: import('../catalog/catalogManager').CatalogManager | null = null;
 
   constructor(githubRepo: string, outputDir: string) {
     this.githubRepo = githubRepo;
@@ -56,21 +57,21 @@ export class HognoseIndexer {
     try {
       logger.section('Initializing Hognose indexer');
 
+      // Initialize catalog manager
+      const { CatalogManager } = await import('../catalog/catalogManager');
+      this.catalogManager = new CatalogManager(this.outputDir);
+      await this.catalogManager.loadCatalogIndex();
+
       // If replaceExisting is true, clear all existing Hognose levels
       if (options?.replaceExisting) {
         logger.item('Clearing existing Hognose levels...');
-        const { CatalogManager } = await import('../catalog/catalogManager');
-        const catalogManager = new CatalogManager(this.outputDir);
-        await catalogManager.loadCatalogIndex();
-
-        const clearedCount = await catalogManager.clearLevelsBySource(MapSource.HOGNOSE);
+        const clearedCount = await this.catalogManager.clearLevelsBySource(MapSource.HOGNOSE);
         if (clearedCount > 0) {
           logger.success(`Cleared ${clearedCount} existing Hognose levels`);
         }
 
-        // Also clear the processed releases tracking
+        // Clear the processed releases tracking from memory
         this.processedReleases.clear();
-        await this.saveProcessedReleases();
       }
 
       progressCallback?.({
@@ -97,18 +98,13 @@ export class HognoseIndexer {
           // If we have a new release and replaceExisting is not explicitly false, clear old levels
           if (options?.replaceExisting !== false) {
             logger.info('Clearing old Hognose levels for new release...');
-            const { CatalogManager } = await import('../catalog/catalogManager');
-            const catalogManager = new CatalogManager(this.outputDir);
-            await catalogManager.loadCatalogIndex();
-
-            const clearedCount = await catalogManager.clearLevelsBySource(MapSource.HOGNOSE);
+            const clearedCount = await this.catalogManager.clearLevelsBySource(MapSource.HOGNOSE);
             if (clearedCount > 0) {
               logger.info(`Cleared ${clearedCount} old Hognose levels`);
             }
 
             // Clear processed releases to reprocess the new one
             this.processedReleases.clear();
-            await this.saveProcessedReleases();
           }
         }
       }
@@ -377,16 +373,40 @@ export class HognoseIndexer {
   }
 
   private async loadProcessedReleases(): Promise<void> {
-    const processedPath = path.join(this.outputDir, 'hognose_processed.json');
-    const processed = await FileUtils.readJSON<string[]>(processedPath);
-    if (processed) {
-      this.processedReleases = new Set(processed);
+    // Instead of loading from a file, query the catalog for existing Hognose levels
+    // and extract the release tags from their metadata
+    if (!this.catalogManager) {
+      const { CatalogManager } = await import('../catalog/catalogManager');
+      this.catalogManager = new CatalogManager(this.outputDir);
+      await this.catalogManager.loadCatalogIndex();
     }
+
+    const catalog = await this.catalogManager.getCatalog();
+    const processedTags = new Set<string>();
+
+    for (const level of catalog.levels) {
+      if (level.metadata.source === MapSource.HOGNOSE && level.metadata.tags) {
+        // Extract release tag from tags array
+        const releaseTag = level.metadata.tags.find(
+          (tag: string) =>
+            tag.startsWith('v') ||
+            tag.match(/^\d+\.\d+/) ||
+            (tag !== 'hognose' && tag !== 'github-release')
+        );
+        if (releaseTag) {
+          processedTags.add(releaseTag);
+        }
+      }
+    }
+
+    this.processedReleases = processedTags;
+    logger.debug(`Loaded ${processedTags.size} processed releases from catalog`);
   }
 
   private async saveProcessedReleases(): Promise<void> {
-    const processedPath = path.join(this.outputDir, 'hognose_processed.json');
-    await FileUtils.writeJSON(processedPath, Array.from(this.processedReleases));
+    // No need to save to a separate file anymore
+    // The processed releases are tracked through the catalog itself
+    logger.debug('Processed releases tracked in catalog metadata');
   }
 
   private async saveLevelData(level: Level): Promise<void> {

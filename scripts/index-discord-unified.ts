@@ -3,25 +3,31 @@ import { DiscordUnifiedIndexer } from '../src/indexers/discordUnified';
 import { logger } from '../src/utils/logger';
 import chalk from 'chalk';
 import ProgressBar from 'progress';
-import { IndexerProgress } from '../src/types';
+import { IndexerProgress, MapSource } from '../src/types';
 
 dotenv.config();
 
-const DISCORD_CHANNELS = [
-  '683985075704299520', // Old pre-v1 maps
-  '1139908458968252457', // Community levels (v1+)
-];
+const DISCORD_CHANNELS = {
+  archive: ['683985075704299520'], // Old pre-v1 maps
+  community: ['1139908458968252457'], // Community levels (v1+)
+};
 
 const OUTPUT_DIR = './output';
 
 async function main() {
-  logger.info(chalk.blue('🤖 Starting Unified Discord Indexer...'));
-  logger.info(`Output directory: ${OUTPUT_DIR}`);
-  logger.info(`Channels to index: ${DISCORD_CHANNELS.length}`);
-  logger.info('  - 683985075704299520 (Old pre-v1 maps)');
-  logger.info('  - 1139908458968252457 (Community levels v1+)');
+  const args = process.argv.slice(2);
+  const source = args.includes('--archive') ? 'archive' : 'community';
+  const channels = source === 'archive' ? DISCORD_CHANNELS.archive : DISCORD_CHANNELS.community;
+  const mapSource = source === 'archive' ? MapSource.DISCORD_ARCHIVE : MapSource.DISCORD_COMMUNITY;
 
-  const indexer = new DiscordUnifiedIndexer(DISCORD_CHANNELS, OUTPUT_DIR);
+  logger.info(
+    chalk.blue(`🤖 Starting Discord ${source.charAt(0).toUpperCase() + source.slice(1)} Indexer...`)
+  );
+  logger.info(`Output directory: ${OUTPUT_DIR}`);
+  logger.info(`Source: ${source}`);
+  logger.info(`Channels to index: ${channels.join(', ')}`);
+
+  const indexer = new DiscordUnifiedIndexer(channels, OUTPUT_DIR, mapSource);
 
   let progressBar: ProgressBar | undefined;
 
@@ -78,11 +84,15 @@ async function main() {
 }
 
 // Handle command line arguments
-const args = process.argv.slice(2);
-if (args.includes('--clear-auth')) {
+if (process.argv.includes('--clear-auth')) {
   logger.info('Clearing authentication cache...');
-  const indexer = new DiscordUnifiedIndexer(DISCORD_CHANNELS, OUTPUT_DIR);
-  indexer
+  // Create a temporary indexer just to clear auth cache
+  const tempIndexer = new DiscordUnifiedIndexer(
+    ['temporary'],
+    OUTPUT_DIR,
+    MapSource.DISCORD_COMMUNITY
+  );
+  tempIndexer
     .clearAuthCache()
     .then(() => {
       logger.success('Authentication cache cleared!');

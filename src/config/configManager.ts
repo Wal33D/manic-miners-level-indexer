@@ -78,26 +78,41 @@ export class ConfigManager {
     this.config.outputDir = dir;
   }
 
-  // Archive configuration
-  setArchiveBaseUrl(baseUrl: string): void {
-    this.config.sources.archive.baseUrl = baseUrl;
+  // Internet Archive configuration
+  setInternetArchiveBaseUrl(baseUrl: string): void {
+    this.config.sources.internet_archive.baseUrl = baseUrl;
   }
 
-  // Discord configuration
-  setDiscordChannels(channels: string[]): void {
-    this.config.sources.discord.channels = channels;
+  // Discord Community configuration
+  setDiscordCommunityChannels(channels: string[]): void {
+    this.config.sources.discord_community.channels = channels;
   }
 
-  addDiscordChannel(channel: string): void {
-    if (!this.config.sources.discord.channels.includes(channel)) {
-      this.config.sources.discord.channels.push(channel);
+  addDiscordCommunityChannel(channel: string): void {
+    if (!this.config.sources.discord_community.channels.includes(channel)) {
+      this.config.sources.discord_community.channels.push(channel);
     }
   }
 
-  removeDiscordChannel(channel: string): void {
-    this.config.sources.discord.channels = this.config.sources.discord.channels.filter(
-      c => c !== channel
-    );
+  removeDiscordCommunityChannel(channel: string): void {
+    this.config.sources.discord_community.channels =
+      this.config.sources.discord_community.channels.filter(c => c !== channel);
+  }
+
+  // Discord Archive configuration
+  setDiscordArchiveChannels(channels: string[]): void {
+    this.config.sources.discord_archive.channels = channels;
+  }
+
+  addDiscordArchiveChannel(channel: string): void {
+    if (!this.config.sources.discord_archive.channels.includes(channel)) {
+      this.config.sources.discord_archive.channels.push(channel);
+    }
+  }
+
+  removeDiscordArchiveChannel(channel: string): void {
+    this.config.sources.discord_archive.channels =
+      this.config.sources.discord_archive.channels.filter(c => c !== channel);
   }
 
   // Hognose configuration
@@ -118,20 +133,34 @@ export class ConfigManager {
       errors.push('Output directory is required');
     }
 
-    // Validate archive source
-    if (this.config.sources.archive.enabled) {
-      if (!this.config.sources.archive.baseUrl) {
-        errors.push('Archive base URL is required when archive source is enabled');
+    // Validate internet archive source
+    if (this.config.sources.internet_archive.enabled) {
+      if (!this.config.sources.internet_archive.baseUrl) {
+        errors.push(
+          'Internet Archive base URL is required when Internet Archive source is enabled'
+        );
       }
     }
 
-    // Validate Discord source
-    if (this.config.sources.discord.enabled) {
+    // Validate Discord Community source
+    if (this.config.sources.discord_community.enabled) {
       if (
-        !this.config.sources.discord.channels ||
-        this.config.sources.discord.channels.length === 0
+        !this.config.sources.discord_community.channels ||
+        this.config.sources.discord_community.channels.length === 0
       ) {
-        errors.push('Discord channels are required when Discord source is enabled');
+        errors.push(
+          'Discord Community channels are required when Discord Community source is enabled'
+        );
+      }
+    }
+
+    // Validate Discord Archive source
+    if (this.config.sources.discord_archive.enabled) {
+      if (
+        !this.config.sources.discord_archive.channels ||
+        this.config.sources.discord_archive.channels.length === 0
+      ) {
+        errors.push('Discord Archive channels are required when Discord Archive source is enabled');
       }
     }
 
@@ -171,12 +200,27 @@ export class ConfigManager {
 
     // Handle nested objects
     if (updates.sources) {
-      merged.sources = {
-        ...merged.sources,
-        archive: { ...merged.sources.archive, ...updates.sources.archive },
-        discord: { ...merged.sources.discord, ...updates.sources.discord },
-        hognose: { ...merged.sources.hognose, ...updates.sources.hognose },
-      };
+      if (updates.sources.internet_archive) {
+        merged.sources.internet_archive = {
+          ...merged.sources.internet_archive,
+          ...updates.sources.internet_archive,
+        };
+      }
+      if (updates.sources.discord_community) {
+        merged.sources.discord_community = {
+          ...merged.sources.discord_community,
+          ...updates.sources.discord_community,
+        };
+      }
+      if (updates.sources.discord_archive) {
+        merged.sources.discord_archive = {
+          ...merged.sources.discord_archive,
+          ...updates.sources.discord_archive,
+        };
+      }
+      if (updates.sources.hognose) {
+        merged.sources.hognose = { ...merged.sources.hognose, ...updates.sources.hognose };
+      }
     }
 
     // Handle primitive properties
@@ -193,13 +237,17 @@ export class ConfigManager {
       _comments: {
         outputDir: 'Directory where all indexed levels and catalogs will be stored',
         sources: {
-          archive: {
+          internet_archive: {
             enabled: 'Enable Internet Archive indexing',
             baseUrl: 'Base URL for Internet Archive API',
           },
-          discord: {
-            enabled: 'Enable Discord channel indexing',
-            channels: 'List of Discord channel URLs to scrape',
+          discord_community: {
+            enabled: 'Enable Discord Community channel indexing',
+            channels: 'List of Discord Community channel IDs to scrape',
+          },
+          discord_archive: {
+            enabled: 'Enable Discord Archive channel indexing',
+            channels: 'List of Discord Archive channel IDs to scrape',
           },
           hognose: {
             enabled: 'Enable Hognose GitHub releases indexing',

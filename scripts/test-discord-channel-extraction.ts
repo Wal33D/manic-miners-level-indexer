@@ -94,7 +94,8 @@ async function testDiscordChannelExtraction() {
         });
       }
 
-      const info = channelMap.get(channelId)!;
+      const info = channelMap.get(channelId);
+      if (!info) continue;
       info.count++;
       if (messageId) {
         info.messages.add(messageId);

@@ -22,6 +22,7 @@ export interface LevelMetadata {
   rating?: number;
   downloadCount?: number;
   formatVersion?: 'below-v1' | 'v1' | 'v2' | 'unknown';
+  releaseId?: string;
   discordChannelId?: string;
   discordChannelName?: string;
 }

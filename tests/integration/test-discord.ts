@@ -29,13 +29,39 @@ async function testDiscordIndexer() {
   logger.info('  - 683985075704299520 (Old pre-v1 maps)');
   logger.info('  - 1139908458968252457 (Community levels v1+)');
 
-  const indexer = new DiscordUnifiedIndexer(channels, outputDir);
+  // Test both Discord sources
+  const communityIndexer = new DiscordUnifiedIndexer(
+    ['1139908458968252457'], // Community levels (v1+)
+    outputDir,
+    MapSource.DISCORD_COMMUNITY
+  );
+  const archiveIndexer = new DiscordUnifiedIndexer(
+    ['683985075704299520'], // Old pre-v1 maps
+    outputDir,
+    MapSource.DISCORD_ARCHIVE
+  );
 
   const startTime = Date.now();
 
-  const result = await indexer.indexDiscord(progress => {
+  // Index community first
+  logger.info('\n=== Indexing Discord Community ===');
+  const communityResult = await communityIndexer.indexDiscord(progress => {
     logger.info(`[${progress.phase}] ${progress.message} - ${progress.current}/${progress.total}`);
   });
+
+  // Then index archive
+  logger.info('\n=== Indexing Discord Archive ===');
+  const archiveResult = await archiveIndexer.indexDiscord(progress => {
+    logger.info(`[${progress.phase}] ${progress.message} - ${progress.current}/${progress.total}`);
+  });
+
+  const result = {
+    success: communityResult.success && archiveResult.success,
+    levelsProcessed: communityResult.levelsProcessed + archiveResult.levelsProcessed,
+    levelsSkipped: communityResult.levelsSkipped + archiveResult.levelsSkipped,
+    errors: [...communityResult.errors, ...archiveResult.errors],
+    duration: communityResult.duration + archiveResult.duration,
+  };
 
   const duration = Date.now() - startTime;
   const minutes = Math.floor(duration / 60000);
@@ -53,9 +79,13 @@ async function testDiscordIndexer() {
     result.errors.slice(0, 5).forEach(err => logger.warn(`- ${err}`));
   }
 
-  // Check what was downloaded
-  const levelsDir = path.join(outputDir, getSourceLevelsDir(MapSource.DISCORD));
-  if (await fs.pathExists(levelsDir)) {
+  // Check what was downloaded for both sources
+  const communityDir = path.join(outputDir, getSourceLevelsDir(MapSource.DISCORD_COMMUNITY));
+  const archiveDir = path.join(outputDir, getSourceLevelsDir(MapSource.DISCORD_ARCHIVE));
+
+  let totalLevelDirs = 0;
+  if (await fs.pathExists(communityDir)) {
+    const levelsDir = communityDir;
     const allEntries = await fs.readdir(levelsDir);
     // Filter out non-directories like .DS_Store
     const levelDirs: string[] = [];
@@ -66,7 +96,8 @@ async function testDiscordIndexer() {
         levelDirs.push(entry);
       }
     }
-    logger.info(`\nCreated ${levelDirs.length} level directories`);
+    logger.info(`\nCreated ${levelDirs.length} community level directories`);
+    totalLevelDirs += levelDirs.length;
 
     // Sample check of first few levels
     const sampleSize = Math.min(5, levelDirs.length);
@@ -86,10 +117,34 @@ async function testDiscordIndexer() {
     }
   }
 
+  if (await fs.pathExists(archiveDir)) {
+    const allEntries = await fs.readdir(archiveDir);
+    const levelDirs: string[] = [];
+    for (const entry of allEntries) {
+      const entryPath = path.join(archiveDir, entry);
+      const stat = await fs.stat(entryPath);
+      if (stat.isDirectory()) {
+        levelDirs.push(entry);
+      }
+    }
+    logger.info(`Created ${levelDirs.length} archive level directories`);
+    totalLevelDirs += levelDirs.length;
+  }
+
+  logger.info(`\nTotal level directories created: ${totalLevelDirs}`);
+
   // Validate output using shared validator
   logger.info('\n=== Validating Output ===');
   const validator = new OutputValidator();
-  const { results, summary } = await validator.validateDirectory(outputDir, MapSource.DISCORD);
+  // Validate both sources
+  const communityValidation = await validator.validateDirectory(
+    outputDir,
+    MapSource.DISCORD_COMMUNITY
+  );
+  const archiveValidation = await validator.validateDirectory(outputDir, MapSource.DISCORD_ARCHIVE);
+
+  const results = [...communityValidation.results, ...archiveValidation.results];
+  const summary = communityValidation.summary; // Use community summary as base since both have same structure
 
   logger.info(validator.formatSummary(summary));
 

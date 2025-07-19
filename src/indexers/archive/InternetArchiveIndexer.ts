@@ -129,7 +129,7 @@ export class InternetArchiveIndexer extends EventEmitter {
 
         progressCallback?.({
           phase: 'indexing',
-          source: MapSource.ARCHIVE,
+          source: MapSource.INTERNET_ARCHIVE,
           current: processedInBatch,
           total: totalItems,
           message: `Processing archive items...`,
@@ -175,7 +175,7 @@ export class InternetArchiveIndexer extends EventEmitter {
               // Update progress
               progressCallback?.({
                 phase: 'indexing',
-                source: MapSource.ARCHIVE,
+                source: MapSource.INTERNET_ARCHIVE,
                 current: processedInBatch,
                 total: totalItems,
                 message: `Processed ${processedInBatch}/${totalItems} items`,
@@ -253,7 +253,11 @@ export class InternetArchiveIndexer extends EventEmitter {
 
       // Step 3: Create level directory and metadata
       const levelId = FileUtils.generateUniqueId();
-      const levelDir = path.join(this.outputDir, getSourceLevelsDir(MapSource.ARCHIVE), levelId);
+      const levelDir = path.join(
+        this.outputDir,
+        getSourceLevelsDir(MapSource.INTERNET_ARCHIVE),
+        levelId
+      );
       await FileUtils.ensureDir(levelDir);
 
       const levelMetadata: LevelMetadata = {
@@ -262,7 +266,7 @@ export class InternetArchiveIndexer extends EventEmitter {
         author: metadata.creator || 'Unknown',
         description: metadata.description,
         postedDate: metadata.date ? new Date(metadata.date) : new Date(),
-        source: MapSource.ARCHIVE,
+        source: MapSource.INTERNET_ARCHIVE,
         sourceUrl: `https://archive.org/details/${metadata.identifier}`,
         originalId: metadata.identifier,
         downloadCount: metadata.downloads,

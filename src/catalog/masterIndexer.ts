@@ -15,16 +15,17 @@ export class MasterIndexer {
   private catalogManager: CatalogManager;
   private internetArchiveIndexer?: InternetArchiveIndexer;
   private hognoseIndexer?: HognoseIndexer;
-  private discordIndexer?: DiscordUnifiedIndexer;
+  private discordCommunityIndexer?: DiscordUnifiedIndexer;
+  private discordArchiveIndexer?: DiscordUnifiedIndexer;
 
   constructor(config: IndexerConfig) {
     this.config = config;
     this.catalogManager = new CatalogManager(config.outputDir);
 
     // Initialize indexers based on config
-    if (config.sources.archive.enabled) {
+    if (config.sources.internet_archive.enabled) {
       this.internetArchiveIndexer = new InternetArchiveIndexer(
-        config.sources.archive,
+        config.sources.internet_archive,
         config.outputDir
       );
     }
@@ -33,10 +34,19 @@ export class MasterIndexer {
       this.hognoseIndexer = new HognoseIndexer(config.sources.hognose.githubRepo, config.outputDir);
     }
 
-    if (config.sources.discord.enabled) {
-      this.discordIndexer = new DiscordUnifiedIndexer(
-        config.sources.discord.channels,
-        config.outputDir
+    if (config.sources.discord_community.enabled) {
+      this.discordCommunityIndexer = new DiscordUnifiedIndexer(
+        config.sources.discord_community.channels,
+        config.outputDir,
+        MapSource.DISCORD_COMMUNITY
+      );
+    }
+
+    if (config.sources.discord_archive.enabled) {
+      this.discordArchiveIndexer = new DiscordUnifiedIndexer(
+        config.sources.discord_archive.channels,
+        config.outputDir,
+        MapSource.DISCORD_ARCHIVE
       );
     }
   }
@@ -85,17 +95,36 @@ export class MasterIndexer {
         }
       }
 
-      if (this.discordIndexer) {
-        logger.info('Starting Discord indexing...');
-        const result = await this.discordIndexer.indexDiscord(progress => {
+      if (this.discordCommunityIndexer) {
+        logger.info('Starting Discord Community indexing...');
+        const result = await this.discordCommunityIndexer.indexDiscord(progress => {
           logger.progress(progress.message, progress.current, progress.total);
         });
 
         if (result.success) {
-          logger.success(`Discord indexing completed: ${result.levelsProcessed} levels processed`);
+          logger.success(
+            `Discord Community indexing completed: ${result.levelsProcessed} levels processed`
+          );
           totalProcessed += result.levelsProcessed;
         } else {
-          logger.error(`Discord indexing failed with ${result.errors.length} errors`);
+          logger.error(`Discord Community indexing failed with ${result.errors.length} errors`);
+          totalErrors += result.errors.length;
+        }
+      }
+
+      if (this.discordArchiveIndexer) {
+        logger.info('Starting Discord Archive indexing...');
+        const result = await this.discordArchiveIndexer.indexDiscord(progress => {
+          logger.progress(progress.message, progress.current, progress.total);
+        });
+
+        if (result.success) {
+          logger.success(
+            `Discord Archive indexing completed: ${result.levelsProcessed} levels processed`
+          );
+          totalProcessed += result.levelsProcessed;
+        } else {
+          logger.error(`Discord Archive indexing failed with ${result.errors.length} errors`);
           totalErrors += result.errors.length;
         }
       }
@@ -132,7 +161,7 @@ export class MasterIndexer {
       await this.catalogManager.loadCatalogIndex();
 
       switch (source) {
-        case MapSource.ARCHIVE:
+        case MapSource.INTERNET_ARCHIVE:
           if (this.internetArchiveIndexer) {
             await this.internetArchiveIndexer.indexArchive(progress => {
               logger.progress(progress.message, progress.current, progress.total);
@@ -148,9 +177,17 @@ export class MasterIndexer {
           }
           break;
 
-        case MapSource.DISCORD:
-          if (this.discordIndexer) {
-            await this.discordIndexer.indexDiscord(progress => {
+        case MapSource.DISCORD_COMMUNITY:
+          if (this.discordCommunityIndexer) {
+            await this.discordCommunityIndexer.indexDiscord(progress => {
+              logger.progress(progress.message, progress.current, progress.total);
+            });
+          }
+          break;
+
+        case MapSource.DISCORD_ARCHIVE:
+          if (this.discordArchiveIndexer) {
+            await this.discordArchiveIndexer.indexDiscord(progress => {
               logger.progress(progress.message, progress.current, progress.total);
             });
           }
@@ -223,22 +260,25 @@ export class MasterIndexer {
   }
 
   private async getSourceSummary(): Promise<
-    Record<MapSource, { count: number; lastUpdated: string }>
+    Partial<Record<MapSource, { count: number; lastUpdated: string }>>
   > {
     const allLevels = await this.getAllLevels();
-    const summary: Record<MapSource, { count: number; lastUpdated: string }> = {
-      [MapSource.ARCHIVE]: { count: 0, lastUpdated: '' },
-      [MapSource.DISCORD]: { count: 0, lastUpdated: '' },
+    const summary: Partial<Record<MapSource, { count: number; lastUpdated: string }>> = {
+      [MapSource.INTERNET_ARCHIVE]: { count: 0, lastUpdated: '' },
+      [MapSource.DISCORD_COMMUNITY]: { count: 0, lastUpdated: '' },
+      [MapSource.DISCORD_ARCHIVE]: { count: 0, lastUpdated: '' },
       [MapSource.HOGNOSE]: { count: 0, lastUpdated: '' },
     };
 
     for (const level of allLevels) {
       const source = level.metadata.source;
-      summary[source].count++;
+      if (summary[source]) {
+        summary[source].count++;
 
-      const levelDate = level.metadata.postedDate.toISOString();
-      if (!summary[source].lastUpdated || levelDate > summary[source].lastUpdated) {
-        summary[source].lastUpdated = levelDate;
+        const levelDate = level.metadata.postedDate.toISOString();
+        if (!summary[source].lastUpdated || levelDate > summary[source].lastUpdated) {
+          summary[source].lastUpdated = levelDate;
+        }
       }
     }
 
@@ -283,7 +323,7 @@ export class MasterIndexer {
 
   async getCatalogStats(): Promise<{
     totalLevels: number;
-    sources: Record<MapSource, number>;
+    sources: Partial<Record<MapSource, number>>;
     lastUpdated: Date;
   }> {
     await this.catalogManager.loadCatalogIndex();

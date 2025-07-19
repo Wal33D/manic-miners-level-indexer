@@ -16,8 +16,9 @@ export class CatalogManager {
     this.catalogIndex = {
       totalLevels: 0,
       sources: {
-        [MapSource.ARCHIVE]: 0,
-        [MapSource.DISCORD]: 0,
+        [MapSource.INTERNET_ARCHIVE]: 0,
+        [MapSource.DISCORD_COMMUNITY]: 0,
+        [MapSource.DISCORD_ARCHIVE]: 0,
         [MapSource.HOGNOSE]: 0,
       },
       lastUpdated: new Date(),
@@ -29,8 +30,9 @@ export class CatalogManager {
       this.sourceCatalogs.set(source, {
         totalLevels: 0,
         sources: {
-          [MapSource.ARCHIVE]: 0,
-          [MapSource.DISCORD]: 0,
+          [MapSource.INTERNET_ARCHIVE]: 0,
+          [MapSource.DISCORD_COMMUNITY]: 0,
+          [MapSource.DISCORD_ARCHIVE]: 0,
           [MapSource.HOGNOSE]: 0,
         },
         lastUpdated: new Date(),
@@ -130,6 +132,10 @@ export class CatalogManager {
       } else {
         // Add new level
         this.catalogIndex.levels.push(level);
+        // Initialize source count if it doesn't exist
+        if (!this.catalogIndex.sources[level.metadata.source]) {
+          this.catalogIndex.sources[level.metadata.source] = 0;
+        }
         this.catalogIndex.sources[level.metadata.source]++;
         this.catalogIndex.totalLevels++;
         logger.debug(`Added new level: ${level.metadata.title}`);
@@ -146,6 +152,10 @@ export class CatalogManager {
           sourceCatalog.levels[sourceExistingIndex] = level;
         } else {
           sourceCatalog.levels.push(level);
+          // Initialize source count if it doesn't exist
+          if (!sourceCatalog.sources[level.metadata.source]) {
+            sourceCatalog.sources[level.metadata.source] = 0;
+          }
           sourceCatalog.sources[level.metadata.source]++;
           sourceCatalog.totalLevels++;
         }
@@ -275,11 +285,7 @@ export class CatalogManager {
       // Reset indexes
       this.catalogIndex = {
         totalLevels: 0,
-        sources: {
-          [MapSource.ARCHIVE]: 0,
-          [MapSource.DISCORD]: 0,
-          [MapSource.HOGNOSE]: 0,
-        },
+        sources: {},
         lastUpdated: new Date(),
         levels: [],
       };
@@ -289,8 +295,9 @@ export class CatalogManager {
         this.sourceCatalogs.set(source, {
           totalLevels: 0,
           sources: {
-            [MapSource.ARCHIVE]: 0,
-            [MapSource.DISCORD]: 0,
+            [MapSource.INTERNET_ARCHIVE]: 0,
+            [MapSource.DISCORD_COMMUNITY]: 0,
+            [MapSource.DISCORD_ARCHIVE]: 0,
             [MapSource.HOGNOSE]: 0,
           },
           lastUpdated: new Date(),
@@ -329,6 +336,10 @@ export class CatalogManager {
 
             // Add to main catalog
             this.catalogIndex.levels.push(parsedLevel);
+            // Initialize source count if it doesn't exist
+            if (!this.catalogIndex.sources[level.metadata.source]) {
+              this.catalogIndex.sources[level.metadata.source] = 0;
+            }
             this.catalogIndex.sources[level.metadata.source]++;
             this.catalogIndex.totalLevels++;
 
@@ -336,6 +347,10 @@ export class CatalogManager {
             const sourceCatalog = this.sourceCatalogs.get(level.metadata.source);
             if (sourceCatalog) {
               sourceCatalog.levels.push(parsedLevel);
+              // Initialize source count if it doesn't exist
+              if (!sourceCatalog.sources[level.metadata.source]) {
+                sourceCatalog.sources[level.metadata.source] = 0;
+              }
               sourceCatalog.sources[level.metadata.source]++;
               sourceCatalog.totalLevels++;
             }
@@ -451,7 +466,7 @@ export class CatalogManager {
 
   getCatalogStats(): {
     totalLevels: number;
-    sources: Record<MapSource, number>;
+    sources: Partial<Record<MapSource, number>>;
     lastUpdated: Date;
   } {
     return {

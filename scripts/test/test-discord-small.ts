@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { DiscordUnifiedIndexer } from '../../src/indexers/discordUnified';
 import { logger } from '../../src/utils/logger';
 import { FileUtils } from '../../src/utils/fileUtils';
-import { Level, DiscordMessage } from '../../src/types';
+import { Level, DiscordMessage, MapSource } from '../../src/types';
 import path from 'path';
 import fs from 'fs-extra';
 
@@ -32,7 +32,11 @@ async function testDiscordSmall() {
     logger.info('Testing channels:');
     logger.info('  - 683985075704299520 (Old pre-v1 maps)');
     logger.info('  - 1139908458968252457 (Community levels v1+)');
-    const discordIndexer = new DiscordUnifiedIndexer(TEST_CHANNELS, TEST_OUTPUT_DIR);
+    const discordIndexer = new DiscordUnifiedIndexer(
+      TEST_CHANNELS,
+      TEST_OUTPUT_DIR,
+      MapSource.DISCORD_COMMUNITY
+    );
 
     // Monkey patch to limit messages per channel
     const messageCountPerChannel: Record<string, number> = {};

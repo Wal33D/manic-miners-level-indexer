@@ -23,28 +23,28 @@ async function loadConfig(): Promise<IndexerConfig> {
 }
 
 async function main() {
-  logger.header('Manic Miners Level Indexer - Archive Source');
+  logger.header('Manic Miners Level Indexer - Discord Community Source');
 
   const config = await loadConfig();
   const masterIndexer = new MasterIndexer(config);
 
   try {
-    logger.section('Starting Archive.org indexing');
-    await masterIndexer.indexSource(MapSource.INTERNET_ARCHIVE);
+    logger.section('Starting Discord Community indexing');
+    await masterIndexer.indexSource(MapSource.DISCORD_COMMUNITY);
 
     // Show final stats
     const stats = await masterIndexer.getCatalogStats();
     logger.section('Final Statistics');
     logger.stats({
       'Total levels': stats.totalLevels,
-      'Internet Archive levels': stats.sources[MapSource.INTERNET_ARCHIVE] || 0,
+      'Discord Community levels': stats.sources[MapSource.DISCORD_COMMUNITY] || 0,
       'Last updated': new Date(stats.lastUpdated).toLocaleString(),
     });
 
-    logger.success('\nArchive indexing completed successfully!');
+    logger.success('\nDiscord Community indexing completed successfully!');
     process.exit(0);
   } catch (error) {
-    logger.error('Archive indexing failed:', error);
+    logger.error('Discord Community indexing failed:', error);
     process.exit(1);
   }
 }
