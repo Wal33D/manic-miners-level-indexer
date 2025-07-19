@@ -43,11 +43,6 @@ export interface ArchiveItemDetails {
   workable_servers?: string[];
 }
 
-export interface ScrapeResult {
-  items: ArchiveMetadata[];
-  cursor?: string;
-  total: number;
-}
 
 export interface DownloadTask {
   itemId: string;
