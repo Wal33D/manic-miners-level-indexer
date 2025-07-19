@@ -4,7 +4,7 @@
 [![Node.js Version](https://img.shields.io/badge/Node.js-18.0+-green?logo=node.js)](https://nodejs.org/)
 [![npm Version](https://img.shields.io/badge/npm-1.0.0-red?logo=npm)](https://www.npmjs.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/Tests-27%20passing-brightgreen?logo=jest)](https://jestjs.io/)
+[![Levels Indexed](https://img.shields.io/badge/Levels%20Indexed-1,241-brightgreen)](https://github.com/Wal33D/manic-miners-level-indexer)
 [![ESLint](https://img.shields.io/badge/ESLint-Enabled-4B32C3?logo=eslint)](https://eslint.org/)
 [![Prettier](https://img.shields.io/badge/Prettier-Formatted-F7B93E?logo=prettier)](https://prettier.io/)
 [![Code Coverage](https://img.shields.io/badge/Coverage-80%25-green)](https://github.com/Wal33D/manic-miners-level-indexer)
@@ -26,6 +26,26 @@ The Manic Miners Level Indexer is a TypeScript-based tool that creates a searcha
 - **Progress Tracking**: Real-time progress updates during indexing operations
 - **Discord Authentication**: Supports both automated and manual Discord authentication
 - **Export Capabilities**: Export catalogs to JSON or CSV formats
+
+## 📊 Latest Indexing Results
+
+The indexer has successfully cataloged **1,241 community levels** from various sources:
+
+| Source | Levels | Percentage |
+|--------|--------|------------|
+| Discord Archive | 460 | 37% |
+| Discord Community | 334 | 27% |
+| Hognose | 252 | 20% |
+| Internet Archive | 195 | 16% |
+
+**Top Contributors:**
+- Hognose: 252 levels
+- fn4.1150: 126 levels  
+- crystal2780: 123 levels
+- batman1138: 96 levels
+- exkajer: 43 levels
+
+*Last updated: July 19, 2025*
 
 ## 📦 Quick Start
 
