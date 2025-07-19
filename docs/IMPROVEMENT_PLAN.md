@@ -37,7 +37,6 @@ const processData = (data: ProcessData): string[] => {
 **Files to update**:
 - `scripts/test/test-discord-small.ts`
 - `scripts/utils/validate-full-catalog.ts`
-- `src/indexers/discordDirectAPI.ts`
 - `src/tests/analysisReporter.ts`
 - `src/tests/outputValidator.ts`
 - `tests/integration/*.ts`

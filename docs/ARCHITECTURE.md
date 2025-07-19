@@ -205,7 +205,6 @@ src/
 │   │   ├── DownloadManager.ts # File downloads
 │   │   └── StateManager.ts # Persistence
 │   ├── discordUnified.ts  # Discord indexer
-│   ├── discordDirectAPI.ts # Discord API client
 │   └── hognoseIndexer.ts  # GitHub releases indexer
 ├── utils/                  # Utility functions
 │   ├── logger.ts          # Logging utility
