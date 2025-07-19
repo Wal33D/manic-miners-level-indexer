@@ -18,7 +18,6 @@ build/
 .env.test
 
 # Configuration files (may contain sensitive info)
-config.json
 config.local.json
 config.*.json
 !config.template.json
