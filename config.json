@@ -1,0 +1,39 @@
+{
+  "outputDir": "./output",
+  "tempDir": "./temp",
+  "sources": {
+    "internet_archive": {
+      "enabled": true,
+      "baseUrl": "https://archive.org/advancedsearch.php",
+      "searchQueries": ["manic miners level"],
+      "maxConcurrentMetadata": 50,
+      "maxConcurrentDownloads": 10,
+      "enableCache": true,
+      "cacheExpiry": 86400,
+      "retryAttempts": 3,
+      "downloadTimeout": 60000,
+      "skipExisting": true,
+      "verifyChecksums": false
+    },
+    "discord_community": {
+      "enabled": true,
+      "channels": [
+        "1139908458968252457"
+      ],
+      "excludedThreads": [
+        "1381328130924478504"
+      ]
+    },
+    "discord_archive": {
+      "enabled": true,
+      "channels": [
+        "683985075704299520"
+      ]
+    },
+    "hognose": {
+      "enabled": true,
+      "githubRepo": "charredUtensil/hognose",
+      "checkInterval": 86400000
+    }
+  }
+}
