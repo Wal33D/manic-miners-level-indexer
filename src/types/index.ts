@@ -2,7 +2,10 @@ export enum MapSource {
   ARCHIVE = 'archive',
   DISCORD = 'discord',
   HOGNOSE = 'hognose',
+  MERGED = 'merged',
 }
+
+export type OriginalMapSource = Exclude<MapSource, MapSource.MERGED>;
 
 export interface LevelMetadata {
   id: string;
@@ -144,14 +147,23 @@ export interface DuplicateAnalysisReport {
   duplicateCount: number;
   duplicateGroups: DuplicateGroup[];
   statistics: {
-    bySource: Record<
-      MapSource,
-      {
+    bySource: {
+      [MapSource.ARCHIVE]: {
         total: number;
         unique: number;
         duplicates: number;
-      }
-    >;
+      };
+      [MapSource.DISCORD]: {
+        total: number;
+        unique: number;
+        duplicates: number;
+      };
+      [MapSource.HOGNOSE]: {
+        total: number;
+        unique: number;
+        duplicates: number;
+      };
+    };
     crossSourceDuplicates: number;
     withinSourceDuplicates: number;
     largestDuplicateGroup: number;

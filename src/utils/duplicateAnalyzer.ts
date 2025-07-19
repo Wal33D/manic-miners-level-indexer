@@ -78,6 +78,11 @@ export class DuplicateAnalyzer {
 
     const source = level.metadata.source;
 
+    // Skip MERGED sources in duplicate analysis
+    if (source === MapSource.MERGED) {
+      return;
+    }
+
     // Update source statistics
     this.statistics.bySource[source].total++;
 
@@ -147,7 +152,14 @@ export class DuplicateAnalyzer {
       } else {
         // Unique level
         const source = group.levels[0].source;
-        this.statistics.bySource[source].unique++;
+        // Only count sources that are in our statistics
+        if (
+          source === MapSource.ARCHIVE ||
+          source === MapSource.DISCORD ||
+          source === MapSource.HOGNOSE
+        ) {
+          this.statistics.bySource[source].unique++;
+        }
       }
     }
 
@@ -173,9 +185,11 @@ export class DuplicateAnalyzer {
    * Reset statistics counters
    */
   private resetStatistics(): void {
-    for (const source of Object.values(MapSource)) {
-      this.statistics.bySource[source] = { total: 0, unique: 0, duplicates: 0 };
-    }
+    // Reset statistics for original sources only
+    this.statistics.bySource[MapSource.ARCHIVE] = { total: 0, unique: 0, duplicates: 0 };
+    this.statistics.bySource[MapSource.DISCORD] = { total: 0, unique: 0, duplicates: 0 };
+    this.statistics.bySource[MapSource.HOGNOSE] = { total: 0, unique: 0, duplicates: 0 };
+
     this.statistics.crossSourceDuplicates = 0;
     this.statistics.withinSourceDuplicates = 0;
     this.statistics.largestDuplicateGroup = 0;
@@ -230,8 +244,7 @@ export class DuplicateAnalyzer {
         if (ageInDays < 365) score += 1; // Less than a year old
       }
 
-      // Source preference (Discord often has better community metadata)
-      if (level.source === MapSource.DISCORD) score += 1;
+      // No source preference - we'll merge the best from each
 
       return { level, score };
     });

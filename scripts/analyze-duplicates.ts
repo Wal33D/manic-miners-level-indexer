@@ -2,6 +2,7 @@ import { DuplicateAnalyzer } from '../src/utils/duplicateAnalyzer';
 import { logger } from '../src/utils/logger';
 import { FileUtils } from '../src/utils/fileUtils';
 import { MapSource, DuplicateAnalysisReport, DuplicateGroup } from '../src/types';
+import { MergePreview } from '../src/utils/mergePreview';
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
@@ -36,7 +37,7 @@ async function analyzeDuplicates(options: AnalyzeOptions) {
 
     // Show detailed duplicate groups if requested
     if (options.showDetails && report.duplicateGroups.length > 0) {
-      displayDetailedDuplicates(report);
+      displayDetailedDuplicates(report, options);
     }
 
     // Generate reports based on format
@@ -65,34 +66,35 @@ function displayConsoleSummary(report: DuplicateAnalysisReport) {
   logger.info(`  Largest Duplicate Group: ${report.statistics.largestDuplicateGroup} copies`);
 
   logger.info(chalk.yellow('\n📂 By Source:'));
+  logger.info(chalk.gray('  (Pre-merge analysis - original sources only)'));
   for (const [source, stats] of Object.entries(report.statistics.bySource)) {
+    const percentage =
+      stats.total > 0 ? ((stats.duplicates / stats.total) * 100).toFixed(1) : '0.0';
     logger.info(
-      `  ${source}: ${stats.total} total, ${stats.unique} unique, ${stats.duplicates} duplicates (${(
-        (stats.duplicates / stats.total) *
-        100
-      ).toFixed(1)}%)`
+      `  ${source}: ${stats.total} total, ${stats.unique} unique, ${stats.duplicates} duplicates (${percentage}%)`
     );
   }
 }
 
-function displayDetailedDuplicates(report: DuplicateAnalysisReport) {
-  logger.info(chalk.yellow('\n🔍 Detailed Duplicate Groups:'));
+function displayDetailedDuplicates(report: DuplicateAnalysisReport, options: AnalyzeOptions) {
+  logger.info(chalk.yellow('\n🔍 Detailed Duplicate Groups (Will Be Merged):'));
+
+  // Show merge benefits first
+  logger.info(MergePreview.getMergeBenefitsSummary());
 
   // Show top 10 duplicate groups
   const groupsToShow = Math.min(10, report.duplicateGroups.length);
-  logger.info(`(Showing top ${groupsToShow} of ${report.duplicateGroups.length} groups)\n`);
+  logger.info(
+    chalk.yellow(`\nShowing top ${groupsToShow} of ${report.duplicateGroups.length} groups:\n`)
+  );
 
   for (let i = 0; i < groupsToShow; i++) {
     const group = report.duplicateGroups[i];
-    logger.info(DuplicateAnalyzer.formatDuplicateGroup(group));
+    logger.info(MergePreview.formatDuplicateGroupForMerge(group));
 
-    // Show recommendation
-    const recommended = DuplicateAnalyzer.recommendBestDuplicate(group);
-    const recommendedLevel = group.levels.find(l => l.id === recommended);
-    if (recommendedLevel) {
-      logger.info(
-        chalk.green(`  ⭐ Recommended: [${recommendedLevel.source}] "${recommendedLevel.title}"`)
-      );
+    // Show merge preview
+    if (options.showDetails) {
+      logger.info(MergePreview.generatePreview(group));
     }
   }
 
@@ -105,20 +107,32 @@ function displayDetailedDuplicates(report: DuplicateAnalysisReport) {
 
 async function generateReports(report: DuplicateAnalysisReport, options: AnalyzeOptions) {
   const reportsDir = path.join(options.outputDir, 'duplicate-reports');
+  logger.info(`\n📁 Creating reports directory: ${reportsDir}`);
+  logger.info(`Report format requested: ${options.reportFormat}`);
   await fs.ensureDir(reportsDir);
 
   // JSON report
   if (options.reportFormat === 'json' || options.reportFormat === 'all') {
     const jsonPath = path.join(reportsDir, 'duplicates.json');
-    await FileUtils.writeJSON(jsonPath, report);
-    logger.info(`\n📄 JSON report saved to: ${jsonPath}`);
+    logger.info(`Writing JSON report to: ${jsonPath}`);
+    try {
+      await FileUtils.writeJSON(jsonPath, report);
+      logger.info(`📄 JSON report saved to: ${jsonPath}`);
+    } catch (error) {
+      logger.error(`Failed to write JSON report:`, error);
+    }
   }
 
   // HTML report
   if (options.reportFormat === 'html' || options.reportFormat === 'all') {
     const htmlPath = path.join(reportsDir, 'duplicates.html');
-    await generateHTMLReport(report, htmlPath);
-    logger.info(`📄 HTML report saved to: ${htmlPath}`);
+    logger.info(`Writing HTML report to: ${htmlPath}`);
+    try {
+      await generateHTMLReport(report, htmlPath);
+      logger.info(`📄 HTML report saved to: ${htmlPath}`);
+    } catch (error) {
+      logger.error(`Failed to write HTML report:`, error);
+    }
   }
 }
 
@@ -129,7 +143,7 @@ async function generateHTMLReport(report: DuplicateAnalysisReport, outputPath: s
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manic Miners Duplicate Analysis Report</title>
+  <title>Manic Miners Duplicate Analysis & Merge Report</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -183,9 +197,14 @@ async function generateHTMLReport(report: DuplicateAnalysisReport, outputPath: s
       margin: 5px 0;
       background-color: #f8f9fa;
       border-radius: 4px;
+      border-left: 3px solid #ddd;
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+    .level-entry:hover {
+      background-color: #f0f0f0;
+      border-left-color: #999;
     }
     .source-badge {
       display: inline-block;
@@ -198,15 +217,13 @@ async function generateHTMLReport(report: DuplicateAnalysisReport, outputPath: s
     .source-archive { background-color: #e74c3c; }
     .source-discord { background-color: #3498db; }
     .source-hognose { background-color: #2ecc71; }
-    .recommended {
-      background-color: #fffbe6;
-      border: 1px solid #fff1b8;
-    }
+    .source-merged { background-color: #9c27b0; }
   </style>
 </head>
 <body>
   <h1>🔍 Manic Miners Duplicate Analysis Report</h1>
   <p>Generated on ${new Date(report.generatedAt).toLocaleString()}</p>
+  <p style="color: #666;">This is a pre-merge analysis showing duplicates across original sources (Archive, Discord, Hognose)</p>
 
   <div class="summary">
     <h2>Summary Statistics</h2>
@@ -253,10 +270,9 @@ async function generateHTMLReport(report: DuplicateAnalysisReport, outputPath: s
             <td style="text-align: center; padding: 8px;">${stats.total}</td>
             <td style="text-align: center; padding: 8px;">${stats.unique}</td>
             <td style="text-align: center; padding: 8px;">${stats.duplicates}</td>
-            <td style="text-align: center; padding: 8px;">${(
-              (stats.duplicates / stats.total) *
-              100
-            ).toFixed(1)}%</td>
+            <td style="text-align: center; padding: 8px;">${
+              stats.total > 0 ? ((stats.duplicates / stats.total) * 100).toFixed(1) : '0.0'
+            }%</td>
           </tr>
         `
           )
@@ -266,32 +282,51 @@ async function generateHTMLReport(report: DuplicateAnalysisReport, outputPath: s
   </div>
 
   <div class="summary">
-    <h2>Duplicate Groups (${report.duplicateGroups.length} total)</h2>
+    <h2>Duplicate Groups to Merge (${report.duplicateGroups.length} total)</h2>
     <p>Cross-source duplicates: ${report.statistics.crossSourceDuplicates} groups<br>
        Within-source duplicates: ${report.statistics.withinSourceDuplicates} groups</p>
+    <div style="background-color: #e3f2fd; padding: 15px; border-radius: 6px; margin-top: 20px;">
+      <h3>🔀 Merge Process</h3>
+      <p>These duplicate groups will be intelligently merged to create a unified catalog with:</p>
+      <ul>
+        <li>Professional descriptions from Archive.org</li>
+        <li>Accurate timestamps from Discord</li>
+        <li>Author's original notes preserved</li>
+        <li>All unique metadata combined</li>
+      </ul>
+    </div>
   </div>
 
   ${report.duplicateGroups
     .slice(0, 50)
     .map((group, index) => {
-      const recommended = DuplicateAnalyzer.recommendBestDuplicate(group);
+      const archiveLevel = group.levels.find(l => l.source === 'archive');
+      const discordLevel = group.levels.find(l => l.source === 'discord');
       return `
       <div class="duplicate-group">
-        <h3>Group ${index + 1} - ${group.levels.length} copies (${(group.fileSize / 1024).toFixed(
-          1
-        )} KB)</h3>
+        <h3>Group ${index + 1} - ${group.levels.length} sources will be merged (${(
+          group.fileSize / 1024
+        ).toFixed(1)} KB)</h3>
         <div style="font-family: monospace; font-size: 0.8em; color: #666; margin-bottom: 10px;">
           Hash: ${group.hash.substring(0, 16)}...
+        </div>
+        <div style="background-color: #f0f8ff; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+          <strong>🔀 These ${group.levels.length} sources will be merged</strong>
+          <br><small>A new unified entry will be created combining the best metadata from each source:</small>
+          <ul style="margin: 5px 0; padding-left: 20px; font-size: 0.9em;">
+            ${archiveLevel ? '<li>Professional description from Archive.org</li>' : ''}
+            ${discordLevel ? '<li>Accurate timestamps from Discord</li>' : ''}
+            ${group.levels.some(l => l.metadata.tags && l.metadata.tags.length > 0) ? '<li>Combined tags from all sources</li>' : ''}
+          </ul>
         </div>
         ${group.levels
           .map(
             level => `
-          <div class="level-entry ${level.id === recommended ? 'recommended' : ''}">
+          <div class="level-entry">
             <div>
               <span class="source-badge source-${level.source}">${level.source.toUpperCase()}</span>
               <strong>${level.title}</strong> by ${level.author}
               ${level.uploadDate ? `(${new Date(level.uploadDate).toLocaleDateString()})` : ''}
-              ${level.id === recommended ? ' ⭐ <em>Recommended</em>' : ''}
             </div>
           </div>
         `

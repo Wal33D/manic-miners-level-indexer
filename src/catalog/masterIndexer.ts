@@ -230,6 +230,7 @@ export class MasterIndexer {
       [MapSource.ARCHIVE]: { count: 0, lastUpdated: '' },
       [MapSource.DISCORD]: { count: 0, lastUpdated: '' },
       [MapSource.HOGNOSE]: { count: 0, lastUpdated: '' },
+      [MapSource.MERGED]: { count: 0, lastUpdated: '' },
     };
 
     for (const level of allLevels) {

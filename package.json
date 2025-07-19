@@ -35,6 +35,7 @@
     "test:discord:auth": "ts-node scripts/test/test-discord-auth.ts",
     "test:discord:auth:enhanced": "ts-node scripts/test/test-discord-auth-enhanced.ts",
     "test:discord:auth:auto": "ts-node scripts/test/test-discord-auto-login.ts",
+    "test:discord:auth:headless": "ts-node scripts/test-discord-auth-headless.ts",
     "index:hognose": "ts-node scripts/index-hognose.ts",
     "build:discord-catalog": "ts-node scripts/utils/build-discord-catalog.ts",
     "clean:test": "ts-node scripts/utils/clean-test-outputs.ts",
@@ -42,7 +43,8 @@
     "show:output": "ts-node scripts/utils/show-output-structure.ts",
     "validate:catalog": "ts-node scripts/utils/validate-full-catalog.ts",
     "migrate:versions": "ts-node src/scripts/migrateFormatVersions.ts",
-    "analyze:duplicates": "ts-node scripts/analyze-duplicates.ts"
+    "analyze:duplicates": "ts-node scripts/analyze-duplicates.ts",
+    "merge:levels": "ts-node scripts/merge-duplicate-levels.ts"
   },
   "keywords": [
     "manic-miners",
