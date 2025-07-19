@@ -140,7 +140,7 @@ describe('ConfigManager', () => {
       const validation = configManager.validateConfig();
       expect(validation.valid).toBe(false);
       expect(validation.errors).toContain(
-        'Archive base URL is required when archive source is enabled'
+        'Internet Archive base URL is required when Internet Archive source is enabled'
       );
     });
 

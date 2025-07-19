@@ -43,7 +43,6 @@ export interface ArchiveItemDetails {
   workable_servers?: string[];
 }
 
-
 export interface DownloadTask {
   itemId: string;
   file: ArchiveFile;
