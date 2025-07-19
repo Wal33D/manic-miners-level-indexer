@@ -55,9 +55,42 @@ export class DiscordAuth {
   }
 
   async getToken(options?: { token?: string; tokenFile?: string }): Promise<AuthResult> {
-    // Try to get cached token first
+    // Check if we have a cached token that matches the env token
+    const envToken = process.env.DISCORD_TOKEN;
     const cached = await this.getCachedToken();
-    if (cached) {
+
+    // If cached token matches env token and is valid, use it immediately
+    if (envToken && cached && cached.token === envToken) {
+      const isValid = await this.isTokenValid(cached);
+      if (isValid) {
+        logger.info('Using cached Discord token (matches env token)');
+        return {
+          token: cached.token,
+          userId: cached.userId,
+          username: cached.username,
+          expiresAt: cached.expiresAt ? new Date(cached.expiresAt) : undefined,
+        };
+      }
+    }
+
+    // First priority: Check DISCORD_TOKEN from .env and validate by hitting Discord servers
+    if (envToken) {
+      logger.info('Found DISCORD_TOKEN in environment, validating...');
+      const isValid = await this.validateTokenWithServerCheck(envToken);
+      if (isValid) {
+        logger.success('Environment Discord token is valid, using it');
+        const result = { token: envToken };
+        await this.cacheToken(result);
+        return result;
+      } else {
+        logger.warn(
+          'Environment Discord token is invalid or expired, proceeding with authentication'
+        );
+      }
+    }
+
+    // Try to get cached token second (if not already checked above)
+    if (cached && (!envToken || cached.token !== envToken)) {
       logger.debug(`Found cached token for user: ${cached.username || 'unknown'}`);
       const isValid = await this.isTokenValid(cached);
       if (isValid) {
@@ -75,7 +108,7 @@ export class DiscordAuth {
       logger.debug('No cached token found');
     }
 
-    // Try to get token from various sources
+    // Try to get token from other sources (token parameter, file, etc.)
     const providedToken = await DiscordTokenProvider.getToken(options);
     if (providedToken) {
       // Validate the token
@@ -209,7 +242,43 @@ export class DiscordAuth {
     }
   }
 
-  private async cacheToken(result: AuthResult): Promise<void> {
+  private async validateTokenWithServerCheck(token: string): Promise<boolean> {
+    try {
+      // First do basic token validation
+      const basicValidation = await this.validateToken(token);
+      if (!basicValidation) {
+        return false;
+      }
+
+      // Then try to access a Discord server page to ensure we're properly logged in
+      const response = await fetch('https://discord.com/api/v9/users/@me/guilds', {
+        headers: {
+          Authorization: token,
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        },
+      });
+
+      if (!response.ok) {
+        // Handle rate limiting specifically
+        if (response.status === 429) {
+          logger.warn('Discord API rate limit hit during validation');
+          // If we're rate limited but basic validation passed, consider it valid
+          // The actual request will handle rate limiting properly
+          return basicValidation;
+        }
+        logger.warn(`Server access check failed with status: ${response.status}`);
+        return false;
+      }
+
+      logger.debug('Token validation passed: can access user profile and server list');
+      return true;
+    } catch (error) {
+      logger.error('Token server validation error:', error);
+      return false;
+    }
+  }
+
+  private async cacheToken(result: AuthResult, saveToEnv: boolean = false): Promise<void> {
     try {
       await fs.ensureDir(this.cacheDir);
       const cached: CachedToken = {
@@ -221,8 +290,49 @@ export class DiscordAuth {
       };
       await fs.writeFile(this.cacheFile, JSON.stringify(cached, null, 2));
       logger.info('Discord token cached successfully');
+
+      // Save to .env file if requested and token is different from current env
+      if (saveToEnv && process.env.DISCORD_TOKEN !== result.token) {
+        await this.saveTokenToEnv(result.token);
+      }
     } catch (error) {
       logger.warn('Failed to cache token:', error);
+    }
+  }
+
+  private async saveTokenToEnv(token: string): Promise<void> {
+    try {
+      const envPath = path.resolve('.env');
+      let envContent = '';
+
+      // Read existing .env file if it exists
+      if (await fs.pathExists(envPath)) {
+        envContent = await fs.readFile(envPath, 'utf-8');
+      }
+
+      // Update or add DISCORD_TOKEN
+      const tokenRegex = /^DISCORD_TOKEN=.*$/m;
+      const newTokenLine = `DISCORD_TOKEN=${token}`;
+
+      if (tokenRegex.test(envContent)) {
+        // Replace existing DISCORD_TOKEN
+        envContent = envContent.replace(tokenRegex, newTokenLine);
+        logger.info('Updated DISCORD_TOKEN in .env file');
+      } else {
+        // Add new DISCORD_TOKEN
+        if (envContent && !envContent.endsWith('\n')) {
+          envContent += '\n';
+        }
+        envContent += `${newTokenLine}\n`;
+        logger.info('Added DISCORD_TOKEN to .env file');
+      }
+
+      await fs.writeFile(envPath, envContent);
+
+      // Update process.env for immediate use
+      process.env.DISCORD_TOKEN = token;
+    } catch (error) {
+      logger.warn('Failed to save token to .env file:', error);
     }
   }
 
@@ -237,17 +347,23 @@ export class DiscordAuth {
       const cookies = await context.cookies();
 
       // Get localStorage data
-      const localStorage =
-        (await this.page?.evaluate(() => {
-          const data: Record<string, string> = {};
-          for (let i = 0; i < window.localStorage.length; i++) {
-            const key = window.localStorage.key(i);
-            if (key) {
-              data[key] = window.localStorage.getItem(key) || '';
+      let localStorage: Record<string, string> = {};
+      if (this.page) {
+        try {
+          localStorage = await this.page.evaluate(() => {
+            const data: Record<string, string> = {};
+            for (let i = 0; i < window.localStorage.length; i++) {
+              const key = window.localStorage.key(i);
+              if (key) {
+                data[key] = window.localStorage.getItem(key) || '';
+              }
             }
-          }
-          return data;
-        })) || {};
+            return data;
+          });
+        } catch (error) {
+          logger.debug('Failed to get localStorage:', error);
+        }
+      }
 
       const sessionData: SessionData = {
         cookies,
@@ -649,8 +765,10 @@ export class DiscordAuth {
           username: username || undefined,
         };
 
-        // Cache the token
-        await this.cacheToken(result);
+        // Cache the token and save to .env if we got it through authentication
+        const shouldSaveToEnv =
+          !process.env.DISCORD_TOKEN || process.env.DISCORD_TOKEN !== capturedToken;
+        await this.cacheToken(result, shouldSaveToEnv);
 
         // Save session with the captured token for future headless use
         await this.saveSession(this.context, result);
@@ -658,6 +776,10 @@ export class DiscordAuth {
         logger.success(
           `Discord authentication successful! Token captured for user: ${username || userId || 'unknown'}`
         );
+
+        if (shouldSaveToEnv) {
+          logger.info('New token saved to .env file for future automatic authentication');
+        }
 
         return result;
       } catch (error) {
