@@ -34,9 +34,7 @@
     "index:hognose": "ts-node scripts/index-hognose.ts",
     "clean:test": "ts-node scripts/utils/clean-test-outputs.ts",
     "rebuild:catalog": "ts-node scripts/utils/rebuild-catalog.ts",
-    "show:output": "ts-node scripts/utils/show-output-structure.ts",
     "validate:catalog": "ts-node scripts/utils/validate-full-catalog.ts",
-    "migrate:versions": "ts-node src/scripts/migrateFormatVersions.ts",
     "analyze:discord": "ts-node scripts/analyze-discord-channels.ts"
   },
   "keywords": [

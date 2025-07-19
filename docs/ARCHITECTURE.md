@@ -216,7 +216,6 @@ src/
 │   ├── outputValidator.ts  # Validation logic
 │   └── analysisReporter.ts # Reporting tools
 └── scripts/               # Standalone scripts
-    └── migrateFormatVersions.ts # Migration tool
 ```
 
 ## Design Patterns
