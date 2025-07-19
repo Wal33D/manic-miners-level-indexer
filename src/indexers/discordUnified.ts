@@ -146,12 +146,32 @@ export class DiscordUnifiedIndexer {
     const errors: string[] = [];
 
     try {
-      // Initialize if not already done
-      if (!this.token) {
-        await this.initialize();
-      }
-
       logger.info('Starting unified Discord indexing...');
+
+      // Try to access channels with existing token first
+      if (!this.token) {
+        // Check if we have a token from env or cache
+        const cachedToken = process.env.DISCORD_TOKEN || (await this.getCachedTokenQuick());
+        if (cachedToken) {
+          logger.debug('Found existing token, testing channel access...');
+          this.setToken(cachedToken);
+
+          // Try to access the first channel
+          const testChannelId = this.channels[0];
+          const canAccess = await this.testChannelAccess(testChannelId);
+
+          if (!canAccess) {
+            logger.warn('Token failed to access channel, re-authenticating...');
+            this.token = undefined; // Clear invalid token
+            await this.initialize();
+          } else {
+            logger.success('Existing token works for channel access');
+          }
+        } else {
+          // No token found, need to authenticate
+          await this.initialize();
+        }
+      }
 
       // Load previously processed messages and hashes
       await this.loadProcessedMessages();
@@ -968,5 +988,35 @@ export class DiscordUnifiedIndexer {
 
   async clearAuthCache(): Promise<void> {
     await this.discordAuth.clearCache();
+  }
+
+  private async getCachedTokenQuick(): Promise<string | null> {
+    try {
+      const cacheFile = path.join(this.outputDir, '.auth', 'discord-token.json');
+      if (await fs.pathExists(cacheFile)) {
+        const content = await fs.readFile(cacheFile, 'utf-8');
+        const cached = JSON.parse(content);
+        return cached.token || null;
+      }
+    } catch (error) {
+      // Ignore errors
+    }
+    return null;
+  }
+
+  private async testChannelAccess(channelId: string): Promise<boolean> {
+    try {
+      const response = await fetch(`https://discord.com/api/v9/channels/${channelId}`, {
+        headers: this.headers,
+      });
+
+      // 200 means we can access the channel
+      // 401/403 means auth failed
+      // 404 might mean channel doesn't exist
+      return response.ok;
+    } catch (error) {
+      logger.debug('Channel access test failed:', error);
+      return false;
+    }
   }
 }

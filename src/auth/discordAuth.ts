@@ -150,6 +150,8 @@ export class DiscordAuth {
       }
 
       logger.warn('All headless authentication attempts failed');
+    } else {
+      logger.debug('No email/password credentials found for automatic login');
     }
 
     // Only show browser if we truly need manual intervention
