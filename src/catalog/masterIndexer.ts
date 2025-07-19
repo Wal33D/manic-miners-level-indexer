@@ -1,4 +1,4 @@
-import { Level, MapSource } from '../types';
+import { Level, MapSource, IndexerResult } from '../types';
 import { CatalogManager } from './catalogManager';
 import { InternetArchiveIndexer } from '../indexers/archive/InternetArchiveIndexer';
 import { HognoseIndexer } from '../indexers/hognoseIndexer';
@@ -75,7 +75,7 @@ export class MasterIndexer {
       }
 
       // NOW create array of indexing promises AFTER Discord auth
-      const indexingPromises: Promise<{ source: string; result: unknown }>[] = [];
+      const indexingPromises: Promise<{ source: string; result: IndexerResult }>[] = [];
 
       // Add Internet Archive indexer
       if (this.internetArchiveIndexer) {
