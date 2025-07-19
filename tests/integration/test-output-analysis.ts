@@ -22,15 +22,20 @@ async function testOutputAnalysis() {
   const config: IndexerConfig = {
     outputDir,
     sources: {
-      archive: {
+      internet_archive: {
         enabled: true,
         baseUrl: 'https://archive.org/advancedsearch.php',
       },
-      discord: {
+      discord_community: {
+        enabled: true,
+        channels: [
+          '1139908458968252457', // Community levels (v1+)
+        ],
+      },
+      discord_archive: {
         enabled: true,
         channels: [
           '683985075704299520', // Old pre-v1 maps
-          '1139908458968252457', // Community levels (v1+)
         ],
       },
       hognose: {
@@ -289,7 +294,7 @@ function generateSourceComparison(report: AnalysisReport) {
     '─'.repeat(60),
   ];
 
-  const sources = [MapSource.ARCHIVE, MapSource.DISCORD, MapSource.HOGNOSE];
+  const sources = [MapSource.INTERNET_ARCHIVE, MapSource.DISCORD_COMMUNITY, MapSource.HOGNOSE];
   const getMetric = (source: MapSource, metric: string) => {
     const stats = report.statistics.bySource.get(source);
     if (!stats) return 'N/A';

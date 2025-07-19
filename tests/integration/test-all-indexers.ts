@@ -12,13 +12,17 @@ async function testAllIndexers() {
   const config: IndexerConfig = {
     outputDir: TestPaths.integration.all,
     sources: {
-      archive: {
+      internet_archive: {
         enabled: true,
         baseUrl: 'https://archive.org/advancedsearch.php',
       },
-      discord: {
+      discord_community: {
         enabled: true,
         channels: ['https://discord.com/channels/580269696369164299/1139908458968252457'],
+      },
+      discord_archive: {
+        enabled: false,
+        channels: [],
       },
       hognose: {
         enabled: true,
@@ -34,8 +38,9 @@ async function testAllIndexers() {
   logger.info('Starting test of all indexers...');
   logger.info('Output directory:', config.outputDir);
   logger.info('\nEnabled sources:');
-  logger.info('- Archive.org:', config.sources.archive.enabled);
-  logger.info('- Discord:', config.sources.discord.enabled);
+  logger.info('- Archive.org:', config.sources.internet_archive.enabled);
+  logger.info('- Discord Community:', config.sources.discord_community.enabled);
+  logger.info('- Discord Archive:', config.sources.discord_archive.enabled);
   logger.info('- Hognose:', config.sources.hognose.enabled);
 
   const masterIndexer = new MasterIndexer(config);

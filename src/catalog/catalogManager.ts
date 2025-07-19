@@ -136,7 +136,8 @@ export class CatalogManager {
         if (!this.catalogIndex.sources[level.metadata.source]) {
           this.catalogIndex.sources[level.metadata.source] = 0;
         }
-        this.catalogIndex.sources[level.metadata.source]++;
+        this.catalogIndex.sources[level.metadata.source] =
+          (this.catalogIndex.sources[level.metadata.source] || 0) + 1;
         this.catalogIndex.totalLevels++;
         logger.debug(`Added new level: ${level.metadata.title}`);
       }
@@ -156,7 +157,8 @@ export class CatalogManager {
           if (!sourceCatalog.sources[level.metadata.source]) {
             sourceCatalog.sources[level.metadata.source] = 0;
           }
-          sourceCatalog.sources[level.metadata.source]++;
+          sourceCatalog.sources[level.metadata.source] =
+            (sourceCatalog.sources[level.metadata.source] || 0) + 1;
           sourceCatalog.totalLevels++;
         }
         sourceCatalog.lastUpdated = new Date();
@@ -180,10 +182,17 @@ export class CatalogManager {
       }
 
       const level = this.catalogIndex.levels[levelIndex];
+      if (!level) {
+        logger.warn(`Level at index ${levelIndex} not found`);
+        return false;
+      }
 
       // Remove level from main index
       this.catalogIndex.levels.splice(levelIndex, 1);
-      this.catalogIndex.sources[level.metadata.source]--;
+      const currentCount = this.catalogIndex.sources[level.metadata.source];
+      if (currentCount && currentCount > 0) {
+        this.catalogIndex.sources[level.metadata.source] = currentCount - 1;
+      }
       this.catalogIndex.totalLevels--;
 
       // Remove level from source catalog
@@ -192,7 +201,10 @@ export class CatalogManager {
         const sourceIndex = sourceCatalog.levels.findIndex(l => l.metadata.id === levelId);
         if (sourceIndex !== -1) {
           sourceCatalog.levels.splice(sourceIndex, 1);
-          sourceCatalog.sources[level.metadata.source]--;
+          const sourceCount = sourceCatalog.sources[level.metadata.source];
+          if (sourceCount && sourceCount > 0) {
+            sourceCatalog.sources[level.metadata.source] = sourceCount - 1;
+          }
           sourceCatalog.totalLevels--;
           sourceCatalog.lastUpdated = new Date();
         }
@@ -249,7 +261,9 @@ export class CatalogManager {
           );
           if (index !== -1) {
             this.catalogIndex.levels.splice(index, 1);
-            this.catalogIndex.sources[source]--;
+            if (this.catalogIndex.sources[source]) {
+              this.catalogIndex.sources[source]--;
+            }
             this.catalogIndex.totalLevels--;
             removedCount++;
           }
@@ -340,7 +354,8 @@ export class CatalogManager {
             if (!this.catalogIndex.sources[level.metadata.source]) {
               this.catalogIndex.sources[level.metadata.source] = 0;
             }
-            this.catalogIndex.sources[level.metadata.source]++;
+            this.catalogIndex.sources[level.metadata.source] =
+              (this.catalogIndex.sources[level.metadata.source] || 0) + 1;
             this.catalogIndex.totalLevels++;
 
             // Add to source catalog
@@ -351,7 +366,8 @@ export class CatalogManager {
               if (!sourceCatalog.sources[level.metadata.source]) {
                 sourceCatalog.sources[level.metadata.source] = 0;
               }
-              sourceCatalog.sources[level.metadata.source]++;
+              sourceCatalog.sources[level.metadata.source] =
+                (sourceCatalog.sources[level.metadata.source] || 0) + 1;
               sourceCatalog.totalLevels++;
             }
           }

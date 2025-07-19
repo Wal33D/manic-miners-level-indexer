@@ -31,7 +31,7 @@ describe('ConfigManager', () => {
       const partialConfig = {
         outputDir: '/custom/output',
         sources: {
-          archive: {
+          internet_archive: {
             enabled: false,
           },
         },
@@ -41,8 +41,10 @@ describe('ConfigManager', () => {
       const config = await configManager.loadConfig();
 
       expect(config.outputDir).toBe('/custom/output');
-      expect(config.sources.archive.enabled).toBe(false);
-      expect(config.sources.archive.baseUrl).toBe(defaultConfig.sources.archive.baseUrl);
+      expect(config.sources.internet_archive.enabled).toBe(false);
+      expect(config.sources.internet_archive.baseUrl).toBe(
+        defaultConfig.sources.internet_archive.baseUrl
+      );
     });
   });
 
@@ -76,26 +78,40 @@ describe('ConfigManager', () => {
     });
 
     it('should enable and disable sources', () => {
-      configManager.disableSource('archive');
-      expect(configManager.getConfig().sources.archive.enabled).toBe(false);
+      configManager.disableSource('internet_archive');
+      expect(configManager.getConfig().sources.internet_archive.enabled).toBe(false);
 
-      configManager.enableSource('archive');
-      expect(configManager.getConfig().sources.archive.enabled).toBe(true);
+      configManager.enableSource('internet_archive');
+      expect(configManager.getConfig().sources.internet_archive.enabled).toBe(true);
     });
 
     it('should update source config', () => {
-      configManager.updateSourceConfig('archive', { baseUrl: 'https://example.com' });
-      expect(configManager.getConfig().sources.archive.baseUrl).toBe('https://example.com');
+      configManager.updateSourceConfig('internet_archive', { baseUrl: 'https://example.com' });
+      expect(configManager.getConfig().sources.internet_archive.baseUrl).toBe(
+        'https://example.com'
+      );
     });
 
-    it('should manage Discord channels', () => {
+    it('should manage Discord Community channels', () => {
       const testChannel = 'https://discord.com/channels/123/456';
 
-      configManager.addDiscordChannel(testChannel);
-      expect(configManager.getConfig().sources.discord.channels).toContain(testChannel);
+      configManager.addDiscordCommunityChannel(testChannel);
+      expect(configManager.getConfig().sources.discord_community.channels).toContain(testChannel);
 
-      configManager.removeDiscordChannel(testChannel);
-      expect(configManager.getConfig().sources.discord.channels).not.toContain(testChannel);
+      configManager.removeDiscordCommunityChannel(testChannel);
+      expect(configManager.getConfig().sources.discord_community.channels).not.toContain(
+        testChannel
+      );
+    });
+
+    it('should manage Discord Archive channels', () => {
+      const testChannel = 'https://discord.com/channels/789/012';
+
+      configManager.addDiscordArchiveChannel(testChannel);
+      expect(configManager.getConfig().sources.discord_archive.channels).toContain(testChannel);
+
+      configManager.removeDiscordArchiveChannel(testChannel);
+      expect(configManager.getConfig().sources.discord_archive.channels).not.toContain(testChannel);
     });
   });
 
@@ -119,7 +135,7 @@ describe('ConfigManager', () => {
     });
 
     it('should detect missing archive URL when enabled', () => {
-      configManager.updateSourceConfig('archive', { baseUrl: '' });
+      configManager.updateSourceConfig('internet_archive', { baseUrl: '' });
 
       const validation = configManager.validateConfig();
       expect(validation.valid).toBe(false);
@@ -129,8 +145,9 @@ describe('ConfigManager', () => {
     });
 
     it('should detect no enabled sources', () => {
-      configManager.disableSource('archive');
-      configManager.disableSource('discord');
+      configManager.disableSource('internet_archive');
+      configManager.disableSource('discord_community');
+      configManager.disableSource('discord_archive');
       configManager.disableSource('hognose');
 
       const validation = configManager.validateConfig();
@@ -144,18 +161,20 @@ describe('ConfigManager', () => {
       await configManager.loadConfig();
 
       const enabledSources = configManager.getEnabledSources();
-      expect(enabledSources).toContain('archive');
-      expect(enabledSources).toContain('discord');
+      expect(enabledSources).toContain('internet_archive');
+      expect(enabledSources).toContain('discord_community');
+      expect(enabledSources).toContain('discord_archive');
       expect(enabledSources).toContain('hognose');
     });
 
     it('should return only enabled sources', async () => {
       await configManager.loadConfig();
-      configManager.disableSource('archive');
+      configManager.disableSource('internet_archive');
 
       const enabledSources = configManager.getEnabledSources();
-      expect(enabledSources).not.toContain('archive');
-      expect(enabledSources).toContain('discord');
+      expect(enabledSources).not.toContain('internet_archive');
+      expect(enabledSources).toContain('discord_community');
+      expect(enabledSources).toContain('discord_archive');
       expect(enabledSources).toContain('hognose');
     });
   });

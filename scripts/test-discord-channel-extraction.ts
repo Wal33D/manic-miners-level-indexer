@@ -15,8 +15,12 @@ async function testDiscordChannelExtraction() {
     return;
   }
 
-  // Get all Discord levels
-  const discordLevels = catalog.levels.filter(level => level.metadata.source === MapSource.DISCORD);
+  // Get all Discord levels (both community and archive)
+  const discordLevels = catalog.levels.filter(
+    level =>
+      level.metadata.source === MapSource.DISCORD_COMMUNITY ||
+      level.metadata.source === MapSource.DISCORD_ARCHIVE
+  );
 
   // Extract all unique channel IDs
   const channelIds = new Set<string>();

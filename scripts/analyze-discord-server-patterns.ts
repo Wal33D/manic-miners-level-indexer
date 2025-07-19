@@ -15,7 +15,11 @@ async function analyzeDiscordServerPatterns() {
     return;
   }
 
-  const discordLevels = catalog.levels.filter(level => level.metadata.source === MapSource.DISCORD);
+  const discordLevels = catalog.levels.filter(
+    level =>
+      level.metadata.source === MapSource.DISCORD_COMMUNITY ||
+      level.metadata.source === MapSource.DISCORD_ARCHIVE
+  );
 
   // These are actually channel IDs, not server IDs
   const channelData: Record<

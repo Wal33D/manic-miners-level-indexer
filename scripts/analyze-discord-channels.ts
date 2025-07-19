@@ -35,8 +35,12 @@ async function analyzeDiscordChannels() {
     return;
   }
 
-  // Filter Discord levels
-  const discordLevels = catalog.levels.filter(level => level.metadata.source === MapSource.DISCORD);
+  // Filter Discord levels (both community and archive)
+  const discordLevels = catalog.levels.filter(
+    level =>
+      level.metadata.source === MapSource.DISCORD_COMMUNITY ||
+      level.metadata.source === MapSource.DISCORD_ARCHIVE
+  );
 
   logger.info(`Found ${discordLevels.length} Discord levels\n`);
 
