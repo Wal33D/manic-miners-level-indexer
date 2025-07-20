@@ -687,7 +687,11 @@ export abstract class DiscordBaseIndexer {
 
   protected async saveLevelData(level: Level): Promise<void> {
     try {
-      // Write metadata.json
+      // Write catalog.json (required for catalog system)
+      const catalogPath = path.join(level.catalogPath, 'catalog.json');
+      await fs.writeJSON(catalogPath, level, { spaces: 2 });
+
+      // Write metadata.json (for backward compatibility)
       const metadataPath = path.join(level.catalogPath, 'metadata.json');
       await fs.writeJSON(metadataPath, level.metadata, { spaces: 2 });
 
