@@ -431,11 +431,8 @@ export class HognoseIndexer {
   ): Promise<Level | null> {
     try {
       // First, stream to a temporary location to calculate hash if skipExisting is enabled
-      const tempPath = path.join(
-        this.outputDir,
-        '.temp',
-        `${Date.now()}_${path.basename(fileName)}`
-      );
+      const sanitizedFileName = FileUtils.sanitizeFilename(path.basename(fileName));
+      const tempPath = path.join(this.outputDir, '.temp', `${Date.now()}_${sanitizedFileName}`);
       await FileUtils.ensureDir(path.dirname(tempPath));
 
       // Stream the .dat file to temp location
@@ -462,7 +459,7 @@ export class HognoseIndexer {
       const levelDir = path.join(this.outputDir, getSourceLevelsDir(MapSource.HOGNOSE), levelId);
       await FileUtils.ensureDir(levelDir);
 
-      const datFileName = path.basename(fileName);
+      const datFileName = sanitizedFileName;
       const localDatPath = path.join(levelDir, datFileName);
 
       // Move from temp to final location
