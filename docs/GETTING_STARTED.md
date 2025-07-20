@@ -135,7 +135,7 @@ Example `config.json`:
     },
     "hognose": {
       "enabled": true,
-      "githubRepo": "charredUtensil/groundhog",
+      "githubRepo": "charredUtensil/hognose",
       "retryAttempts": 3,
       "downloadTimeout": 60000,
       "verifyChecksums": true,

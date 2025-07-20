@@ -38,7 +38,7 @@ output/                              # Root output directory
 └── levels-hognose/               # Hognose repository levels
     ├── catalog_index.json        # Hognose-specific catalog
     └── release-v0.11.2/          # Grouped by release
-        ├── groundhog-0001/
+        ├── hognose-0001/
         │   ├── catalog.json
         │   └── level.dat
         └── [more levels...]
@@ -299,13 +299,13 @@ Enhanced index with statistics and analytics:
 
 - **Format**: UUID v4 (archive, discord) or descriptive (hognose)
 - **Example**: `550e8400-e29b-41d4-a716-446655440000`
-- **Hognose**: `release-v0.11.2/groundhog-0001`
+- **Hognose**: `release-v0.11.2/hognose-0001`
 
 ### DAT Files
 
 - **Archive.org**: Always `level.dat`
 - **Discord**: Original filename preserved
-- **Hognose**: Pattern like `groundhog-XXXX.dat`
+- **Hognose**: Pattern like `hognose-XXXX.dat`
 
 ### Image Files
 

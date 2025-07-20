@@ -291,10 +291,10 @@ console.log(`Indexed ${levels.length} levels from Hognose`);
 levels-hognose/
 ├── catalog_index.json
 └── release-v0.11.2/
-    ├── groundhog-0001/
+    ├── hognose-0001/
     │   ├── catalog.json
     │   └── level.dat
-    ├── groundhog-0002/
+    ├── hognose-0002/
     │   ├── catalog.json
     │   └── level.dat
     └── ...
@@ -303,7 +303,7 @@ levels-hognose/
 ### Metadata Captured
 
 - Level title from filename
-- Author (typically "groundhog" or "hognose")
+- Author (typically "Hognose")
 - Release date and version
 - GitHub release URL
 - File size and format version
