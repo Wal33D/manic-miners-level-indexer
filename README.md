@@ -285,9 +285,8 @@ console.log(`Catalog exported to: ${exportPath}`);
 - [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment instructions
 - [Improvement Plan](docs/IMPROVEMENT_PLAN.md) - Incremental improvement roadmap
 
-### Future Features
-- [Map Renderer Design](docs/MAP_RENDERER.md) - Visual thumbnail generation plans
-- [Level Profiler Design](docs/LEVEL_PROFILER.md) - Level analysis and profiling plans
+### Roadmap
+- [Future Features & Roadmap](docs/ROADMAP.md) - Planned features including Map Renderer and Level Profiler
 
 ## 🤝 Contributing
 

@@ -56,7 +56,7 @@ cat > config.development.json << EOF
     },
     "hognose": {
       "enabled": true,
-      "githubRepo": "charredUtensil/groundhog"
+      "githubRepo": "charredUtensil/hognose"
     }
   }
 }
