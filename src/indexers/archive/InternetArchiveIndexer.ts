@@ -301,14 +301,14 @@ export class InternetArchiveIndexer extends EventEmitter {
       // Download best screenshot
       if (images.screenshots.length > 0) {
         const screenshot = images.screenshots[0];
-        const ext = path.extname(screenshot.name).toLowerCase();
-        const localPath = path.join(levelDir, `screenshot_original${ext}`);
+        const sanitizedName = FileUtils.sanitizeFilename(screenshot.name);
+        const localPath = path.join(levelDir, sanitizedName);
         const downloadUrl = `https://archive.org/download/${metadata.identifier}/${encodeURIComponent(screenshot.name)}`;
 
         const downloadPromise = this.downloadFile(downloadUrl, localPath)
           .then(() => {
             levelFiles.push({
-              filename: `screenshot_original${ext}`,
+              filename: sanitizedName,
               path: localPath,
               size: parseInt(screenshot.size || '0'),
               type: 'other',
@@ -325,14 +325,14 @@ export class InternetArchiveIndexer extends EventEmitter {
       // Download best thumbnail
       if (images.thumbnails.length > 0) {
         const thumbnail = images.thumbnails[0];
-        const ext = path.extname(thumbnail.name).toLowerCase();
-        const localPath = path.join(levelDir, `thumbnail_original${ext}`);
+        const sanitizedName = FileUtils.sanitizeFilename(thumbnail.name);
+        const localPath = path.join(levelDir, sanitizedName);
         const downloadUrl = `https://archive.org/download/${metadata.identifier}/${encodeURIComponent(thumbnail.name)}`;
 
         const downloadPromise = this.downloadFile(downloadUrl, localPath)
           .then(() => {
             levelFiles.push({
-              filename: `thumbnail_original${ext}`,
+              filename: sanitizedName,
               path: localPath,
               size: parseInt(thumbnail.size || '0'),
               type: 'other',

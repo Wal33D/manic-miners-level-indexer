@@ -410,13 +410,14 @@ export abstract class DiscordBaseIndexer {
       await fs.ensureDir(levelDir);
 
       // Download the .dat file
-      const datPath = path.join(levelDir, datAttachment.filename);
+      const sanitizedDatName = FileUtils.sanitizeFilename(datAttachment.filename);
+      const datPath = path.join(levelDir, sanitizedDatName);
       await this.downloadFile(datAttachment.url, datPath);
 
       // Create level files array
       const files: LevelFile[] = [
         {
-          filename: datAttachment.filename,
+          filename: sanitizedDatName,
           path: datPath,
           size: datAttachment.size,
           type: 'dat',
@@ -426,25 +427,27 @@ export abstract class DiscordBaseIndexer {
       // Download associated images
       for (const imageAtt of associatedImages) {
         try {
-          const imageName = imageAtt.filename;
-          logger.info(`Downloading image: ${imageName} for level ${datAttachment.filename}`);
-          const imagePath = path.join(levelDir, imageName);
+          const sanitizedImageName = FileUtils.sanitizeFilename(imageAtt.filename);
+          logger.info(
+            `Downloading image: ${imageAtt.filename} for level ${datAttachment.filename}`
+          );
+          const imagePath = path.join(levelDir, sanitizedImageName);
           await this.downloadFile(imageAtt.url, imagePath);
 
           // Determine image type
           let imageType: 'thumbnail' | 'image' = 'image';
-          if (imageName.toLowerCase().includes('thumb')) {
+          if (sanitizedImageName.toLowerCase().includes('thumb')) {
             imageType = 'thumbnail';
           }
 
           files.push({
-            filename: imageName,
+            filename: sanitizedImageName,
             path: imagePath,
             size: imageAtt.size,
             type: imageType,
           });
 
-          logger.info(`Downloaded image: ${imageName} (${imageType})`);
+          logger.info(`Downloaded image: ${sanitizedImageName} (${imageType})`);
         } catch (error) {
           logger.warn(`Failed to download image ${imageAtt.filename}:`, error);
         }
@@ -569,7 +572,8 @@ export abstract class DiscordBaseIndexer {
 
       // Download ZIP file
       logger.info(`Downloading zip: ${zipAttachment.filename}`);
-      const zipPath = path.join(tempDir, zipAttachment.filename);
+      const sanitizedZipName = FileUtils.sanitizeFilename(zipAttachment.filename);
+      const zipPath = path.join(tempDir, sanitizedZipName);
       await this.downloadFile(zipAttachment.url, zipPath);
 
       // Extract ZIP
