@@ -50,7 +50,7 @@ export class StateManager {
           `Loaded state: ${this.state.processedItems.size} processed, ${this.state.failedItems.size} failed`
         );
       }
-    } catch (error) {
+    } catch {
       logger.info('No previous state found, starting fresh');
     }
   }

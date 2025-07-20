@@ -51,7 +51,7 @@ async function runFullTestSuite() {
       const duration = Date.now() - startTime;
       results.push({ step: step.name, success: true, duration });
       logger.success(chalk.green(`✅ ${step.name} passed (${(duration / 1000).toFixed(2)}s)`));
-    } catch (error) {
+    } catch {
       const duration = Date.now() - startTime;
       results.push({ step: step.name, success: false, duration });
       logger.error(chalk.red(`❌ ${step.name} failed (${(duration / 1000).toFixed(2)}s)`));
@@ -100,8 +100,7 @@ const args = process.argv.slice(2);
 const showHelp = args.includes('--help') || args.includes('-h');
 
 if (showHelp) {
-  console.log(`
-Full Test Suite Runner
+  logger.info(`Full Test Suite Runner
 
 This script runs all quality checks and tests for the project:
 - TypeScript type checking
@@ -115,8 +114,7 @@ Usage:
   npm run test:full -- -h    Show this help
 
 The script will stop on critical failures (type errors, lint errors, unit test failures).
-Non-critical failures (formatting, integration tests) will be reported but won't stop execution.
-  `);
+Non-critical failures (formatting, integration tests) will be reported but won't stop execution.`);
   process.exit(0);
 }
 

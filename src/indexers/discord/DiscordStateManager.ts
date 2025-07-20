@@ -45,7 +45,7 @@ export class DiscordStateManager {
       } else if (existingState) {
         logger.warn('Discord state file has incompatible version, starting fresh');
       }
-    } catch (error) {
+    } catch {
       logger.debug('[DEBUG] No existing Discord state file found, starting fresh');
     }
   }

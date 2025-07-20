@@ -16,10 +16,6 @@ dotenv.config();
 
 async function testDiscordIndexer() {
   const outputDir = TestPaths.integration.discord;
-  const channels = [
-    ...defaultConfig.sources.discord_archive.channels,
-    ...defaultConfig.sources.discord_community.channels,
-  ];
 
   // Clean up previous test output
   await fs.remove(outputDir);

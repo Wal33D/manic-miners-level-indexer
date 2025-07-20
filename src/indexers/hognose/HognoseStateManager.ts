@@ -35,7 +35,7 @@ export class HognoseStateManager {
       } else if (existingState) {
         logger.warn('Hognose state file has incompatible version, starting fresh');
       }
-    } catch (error) {
+    } catch {
       logger.debug('No existing Hognose state file found, starting fresh');
     }
   }
