@@ -73,4 +73,7 @@ process.on('unhandledRejection', error => {
 });
 
 // Run the script
-main();
+main().catch(error => {
+  logger.error('Fatal error:', error);
+  process.exit(1);
+});

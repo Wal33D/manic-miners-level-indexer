@@ -524,7 +524,7 @@ export class HognoseIndexer {
       await this.catalogManager.loadCatalogIndex();
     }
 
-    const catalog = await this.catalogManager.getCatalog();
+    const catalog = this.catalogManager.getCatalog();
     const processedTags = new Set<string>();
 
     for (const level of catalog.levels) {

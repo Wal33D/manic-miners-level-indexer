@@ -59,7 +59,7 @@ export class DiscordTokenProvider {
           return token;
         }
       }
-    } catch (error) {
+    } catch {
       // Silently ignore home directory token file errors
     }
 

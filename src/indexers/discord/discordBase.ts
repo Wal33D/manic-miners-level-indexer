@@ -18,7 +18,6 @@ import { DiscordAuth } from '../../auth/discordAuth';
 import path from 'path';
 import fs from 'fs-extra';
 import unzipper from 'unzipper';
-import { Readable } from 'stream';
 import { DiscordStateManager } from './DiscordStateManager';
 
 // Discord API types

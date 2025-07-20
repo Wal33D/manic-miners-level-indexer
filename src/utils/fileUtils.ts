@@ -135,7 +135,7 @@ export class FileUtils {
   static async fileExists(filePath: string): Promise<boolean> {
     try {
       return await fs.pathExists(filePath);
-    } catch (error) {
+    } catch {
       return false;
     }
   }

@@ -55,7 +55,7 @@ async function testAutoLogin() {
 
     // Try again - should use saved session
     const sessionStart = Date.now();
-    const sessionResult = await auth.getToken();
+    await auth.getToken();
     const sessionDuration = Date.now() - sessionStart;
 
     if (sessionDuration < 5000) {

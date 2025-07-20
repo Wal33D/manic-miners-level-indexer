@@ -1,8 +1,6 @@
 import fetch from 'node-fetch';
 import xml2js from 'xml2js';
 import { logger } from '../../utils/logger';
-import { FileUtils } from '../../utils/fileUtils';
-import path from 'path';
 import { ArchiveMetadata, ArchiveItemDetails, ArchiveSearchOptions } from './types';
 
 // XML response types
@@ -18,7 +16,7 @@ interface XMLDocNode {
 export class MetadataFetcher {
   private baseUrl = 'https://archive.org';
 
-  constructor(outputDir: string) {
+  constructor(_outputDir: string) {
     // Cache functionality has been removed
   }
 

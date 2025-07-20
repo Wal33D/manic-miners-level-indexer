@@ -138,7 +138,7 @@ export class DiscordAuth {
       for (const strategy of headlessStrategies) {
         try {
           logger.info(`Trying headless strategy: ${strategy.name}`);
-          const result = await this.authenticateWithPlaywright(true, email, password, strategy);
+          const result = await this.authenticateWithPlaywright(true, email, password);
           if (result) {
             logger.success(`Headless authentication succeeded with strategy: ${strategy.name}`);
             return result;
@@ -233,7 +233,7 @@ export class DiscordAuth {
           cached.username = user.username;
           await fs.writeFile(this.cacheFile, JSON.stringify(cached, null, 2));
         }
-      } catch (error) {
+      } catch {
         // Ignore errors updating cache
       }
 
@@ -454,8 +454,7 @@ export class DiscordAuth {
   private async authenticateWithPlaywright(
     headless: boolean,
     email?: string,
-    password?: string,
-    strategy?: { name: string; useSession?: boolean; alternativeUA?: boolean }
+    password?: string
   ): Promise<AuthResult> {
     let retries = 0;
     let capturedToken: string | null = null;
@@ -537,7 +536,7 @@ export class DiscordAuth {
                 username = data.username;
                 logger.info(`Captured user info: ${username} (${userId})`);
               }
-            } catch (error) {
+            } catch {
               // Ignore JSON parsing errors
             }
           }
@@ -699,7 +698,7 @@ export class DiscordAuth {
                 await userArea.click();
                 await this.page.waitForTimeout(1000);
               }
-            } catch (error) {
+            } catch {
               // Ignore errors here
             }
           }
@@ -730,7 +729,7 @@ export class DiscordAuth {
                       // Store in localStorage for extraction
                       localStorage.setItem('extracted_token', token);
                     }
-                  } catch (e) {
+                  } catch {
                     // Ignore errors
                   }
                 }
