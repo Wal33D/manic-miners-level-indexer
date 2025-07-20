@@ -16,6 +16,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import unzipper from 'unzipper';
 import { Readable } from 'stream';
+import { DiscordStateManager } from './discord/DiscordStateManager';
 
 interface DiscordThread {
   id: string;
@@ -53,24 +54,37 @@ export class DiscordUnifiedIndexer {
   private channels: string[];
   private outputDir: string;
   private source: MapSource;
-  private processedMessages: Set<string> = new Set();
-  private processedHashes: Map<string, string> = new Map();
   private headers: Record<string, string> = {};
   private discordAuth: DiscordAuth;
   private messageCache: Map<string, DiscordMessage> = new Map(); // Cache for associating images
   private excludedThreads: Set<string>;
+  private retryAttempts: number;
+  private downloadTimeout: number;
+  private skipExisting: boolean;
+  private stateManager: DiscordStateManager;
 
   constructor(
     channels: string[],
     outputDir: string,
     source: MapSource,
-    excludedThreads?: string[]
+    excludedThreads?: string[],
+    retryAttempts?: number,
+    downloadTimeout?: number,
+    skipExisting?: boolean
   ) {
     this.channels = channels;
     this.outputDir = outputDir;
     this.source = source;
     this.discordAuth = new DiscordAuth(path.join(outputDir, '.auth'));
     this.excludedThreads = new Set(excludedThreads || []);
+    this.retryAttempts = retryAttempts ?? 3;
+    this.downloadTimeout = downloadTimeout ?? 60000; // Default 60 seconds
+    this.skipExisting = skipExisting ?? true; // Default to true
+    logger.debug(`[DEBUG] DiscordUnifiedIndexer constructor - skipExisting=${this.skipExisting}, passed value=${skipExisting}`);
+
+    // Initialize state manager
+    const sourceName = source === MapSource.DISCORD_COMMUNITY ? 'community' : 'archive';
+    this.stateManager = new DiscordStateManager(outputDir, sourceName);
   }
 
   setToken(token: string): void {
@@ -87,6 +101,9 @@ export class DiscordUnifiedIndexer {
 
   async initialize(): Promise<void> {
     try {
+      // State is now loaded in indexDiscord() before this method is called
+      logger.info(`Skip existing: ${this.skipExisting}`);
+
       // Skip authentication if token is already set
       if (this.token) {
         logger.info('Using pre-authenticated Discord token');
@@ -121,13 +138,9 @@ export class DiscordUnifiedIndexer {
 
   private async testToken(): Promise<void> {
     try {
-      const response = await fetch('https://discord.com/api/v9/users/@me', {
+      const response = await this.fetchWithRetry('https://discord.com/api/v9/users/@me', {
         headers: this.headers,
       });
-
-      if (!response.ok) {
-        throw new Error(`Token validation failed: ${response.status} ${response.statusText}`);
-      }
 
       const user = await response.json();
       logger.success(`Token validated. Logged in as: ${user.username}#${user.discriminator}`);
@@ -135,6 +148,43 @@ export class DiscordUnifiedIndexer {
       logger.error('Token validation failed:', error);
       throw new Error('Invalid Discord token. Please re-authenticate.');
     }
+  }
+
+  private async fetchWithRetry(url: string, options: any): Promise<any> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
+      try {
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+          // Don't retry on authentication errors
+          if (response.status === 401 || response.status === 403) {
+            throw new Error(`Authentication failed: ${response.status} ${response.statusText}`);
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return response;
+      } catch (error) {
+        lastError = error as Error;
+
+        // Don't retry on authentication errors
+        if (lastError.message.includes('Authentication failed')) {
+          throw lastError;
+        }
+
+        if (attempt < this.retryAttempts) {
+          const delay = 1000 * attempt; // Exponential backoff: 1s, 2s, 3s
+          logger.warn(
+            `Request failed for ${url}, attempt ${attempt}/${this.retryAttempts}. Retrying in ${delay}ms...`
+          );
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw lastError || new Error('Request failed after all retries');
   }
 
   async indexDiscord(
@@ -147,6 +197,18 @@ export class DiscordUnifiedIndexer {
 
     try {
       logger.info('Starting unified Discord indexing...');
+
+      // Always load state first, regardless of token status
+      logger.debug(`[DEBUG] Loading state for Discord ${this.source} indexer - skipExisting: ${this.skipExisting}`);
+      await this.stateManager.loadState();
+      
+      if (this.skipExisting) {
+        const processedCount = this.stateManager.getProcessedMessageCount();
+        const fileCount = this.stateManager.getProcessedFileCount();
+        logger.info(
+          `Loaded state: ${processedCount} messages and ${fileCount} files already processed`
+        );
+      }
 
       // Try to access channels with existing token first
       if (!this.token) {
@@ -173,9 +235,9 @@ export class DiscordUnifiedIndexer {
         }
       }
 
-      // Load previously processed messages and hashes
-      await this.loadProcessedMessages();
-      await this.loadProcessedHashes();
+      // Legacy state files are no longer needed - state manager handles everything
+      // Migration: Load legacy state into state manager if needed
+      await this.migrateFromLegacyState();
 
       for (let channelIndex = 0; channelIndex < this.channels.length; channelIndex++) {
         const channelId = this.channels[channelIndex];
@@ -197,15 +259,29 @@ export class DiscordUnifiedIndexer {
           total: channelMessages.length,
           message: `Processing ${channelMessages.length} messages from channel...`,
         });
+        
+        logger.debug(`[DEBUG] About to process ${channelMessages.length} messages from channel ${channelId}`);
+        logger.debug(`[DEBUG] Current state has ${this.stateManager.getProcessedMessageCount()} processed messages`);
 
         for (let i = 0; i < channelMessages.length; i++) {
           const message = channelMessages[i];
 
           try {
-            if (this.processedMessages.has(message.id)) {
+            // Check if we should skip this message
+            if (this.skipExisting && this.stateManager.isMessageProcessed(message.id)) {
+              logger.debug(`[DEBUG] Skipping already processed message: ${message.id}`);
               levelsSkipped++;
               continue;
             }
+
+            // Check if this is a failed message that shouldn't be retried yet
+            if (this.skipExisting && !this.stateManager.shouldRetryFailedMessage(message.id)) {
+              logger.debug(`[DEBUG] Skipping failed message (retry not due yet): ${message.id}`);
+              levelsSkipped++;
+              continue;
+            }
+
+            logger.debug(`[DEBUG] Processing message ${message.id} - skipExisting: ${this.skipExisting}, isProcessed: ${this.stateManager.isMessageProcessed(message.id)}`);
 
             const levels = await this.processDiscordMessage(message, channelId);
             for (const level of levels) {
@@ -214,12 +290,17 @@ export class DiscordUnifiedIndexer {
               logger.info(`Processed Discord level: ${level.metadata.title}`);
             }
 
-            this.processedMessages.add(message.id);
+            // Mark message as processed
+            this.stateManager.markMessageProcessed(message.id);
+            this.stateManager.clearFailedMessage(message.id);
           } catch (error) {
             const errorMsg = `Failed to process Discord message ${message.id}: ${error}`;
             logger.error(errorMsg);
             errors.push(errorMsg);
             levelsSkipped++;
+
+            // Mark message as failed
+            this.stateManager.markMessageFailed(message.id, errorMsg);
           }
 
           progressCallback?.({
@@ -233,14 +314,25 @@ export class DiscordUnifiedIndexer {
 
         // Clear message cache after processing each channel to save memory
         this.messageCache.clear();
+
+        // Update last indexed time for this channel
+        this.stateManager.updateLastIndexedTime(channelId);
       }
 
-      await this.saveProcessedMessages();
-      await this.saveProcessedHashes();
+      // Legacy state files no longer needed - state manager handles everything
+
+      // Ensure state manager saves its state
+      await this.stateManager.flush();
 
       logger.success(
         `Discord unified indexing completed: ${levelsProcessed} levels processed, ${levelsSkipped} skipped`
       );
+      
+      // Debug summary
+      logger.debug(`[DEBUG] Final state summary:`);
+      logger.debug(`[DEBUG] - Total messages in state: ${this.stateManager.getProcessedMessageCount()}`);
+      logger.debug(`[DEBUG] - Total files in state: ${this.stateManager.getProcessedFileCount()}`);
+      logger.debug(`[DEBUG] - skipExisting was: ${this.skipExisting}`);
 
       return {
         success: true,
@@ -253,6 +345,9 @@ export class DiscordUnifiedIndexer {
       const errorMsg = `Discord unified indexing failed: ${error}`;
       logger.error(errorMsg);
       errors.push(errorMsg);
+
+      // Still save state on error
+      await this.stateManager.flush().catch(e => logger.error('Failed to save state:', e));
 
       return {
         success: false,
@@ -270,12 +365,7 @@ export class DiscordUnifiedIndexer {
     try {
       // First, determine channel type
       const channelUrl = `https://discord.com/api/v9/channels/${channelId}`;
-      const channelResponse = await fetch(channelUrl, { headers: this.headers });
-
-      if (!channelResponse.ok) {
-        logger.error(`Failed to fetch channel info: ${channelResponse.status}`);
-        return messages;
-      }
+      const channelResponse = await this.fetchWithRetry(channelUrl, { headers: this.headers });
 
       const channelInfo = await channelResponse.json();
       logger.info(`Channel ${channelId} is type: ${channelInfo.type} (${channelInfo.name})`);
@@ -294,9 +384,11 @@ export class DiscordUnifiedIndexer {
           const archivedUrl = `https://discord.com/api/v9/channels/${channelId}/threads/archived/public?limit=100${
             before ? `&before=${before}` : ''
           }`;
-          const archivedResponse = await fetch(archivedUrl, { headers: this.headers });
 
-          if (archivedResponse.ok) {
+          try {
+            const archivedResponse = await this.fetchWithRetry(archivedUrl, {
+              headers: this.headers,
+            });
             const archivedData = await archivedResponse.json();
             const threads: DiscordThread[] = archivedData.threads || [];
 
@@ -324,8 +416,8 @@ export class DiscordUnifiedIndexer {
               before = lastThread.thread_metadata.archive_timestamp.replace('+00:00', 'Z');
               logger.info(`Fetching next batch of archived threads...`);
             }
-          } else {
-            logger.error(`Failed to fetch archived threads: ${archivedResponse.status}`);
+          } catch (error) {
+            logger.error(`Failed to fetch archived threads:`, error);
             hasMore = false;
           }
         }
@@ -384,57 +476,56 @@ export class DiscordUnifiedIndexer {
         lastMessageId ? `&before=${lastMessageId}` : ''
       }`;
 
-      const messagesResponse = await fetch(messagesUrl, { headers: this.headers });
+      try {
+        const messagesResponse = await this.fetchWithRetry(messagesUrl, { headers: this.headers });
+        const channelMessages: DiscordAPIMessage[] = await messagesResponse.json();
 
-      if (!messagesResponse.ok) {
-        logger.error(`Failed to fetch messages: ${messagesResponse.status}`);
-        break;
-      }
-
-      const channelMessages: DiscordAPIMessage[] = await messagesResponse.json();
-
-      if (channelMessages.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      totalFetched += channelMessages.length;
-      logger.info(`Fetched ${channelMessages.length} messages (total: ${totalFetched})`);
-
-      // Process messages and cache them
-      for (const msg of channelMessages) {
-        const message: DiscordMessage = {
-          id: msg.id,
-          author: msg.author.username,
-          content: msg.content,
-          timestamp: msg.timestamp,
-          channelId,
-          attachments: msg.attachments.map(att => ({
-            filename: att.filename,
-            url: att.url,
-            size: att.size,
-          })),
-        };
-
-        // Cache all messages for association
-        this.messageCache.set(msg.id, message);
-
-        const relevantAttachments = msg.attachments.filter(att => {
-          const lower = att.filename.toLowerCase();
-          return lower.endsWith('.dat') || lower.endsWith('.zip');
-        });
-
-        if (relevantAttachments.length > 0) {
-          messages.push(message);
+        if (channelMessages.length === 0) {
+          hasMore = false;
+          break;
         }
-      }
 
-      // Set the last message ID for pagination
-      lastMessageId = channelMessages[channelMessages.length - 1].id;
+        totalFetched += channelMessages.length;
+        logger.info(`Fetched ${channelMessages.length} messages (total: ${totalFetched})`);
 
-      // Stop if we've fetched a lot of messages (safety limit)
-      if (totalFetched >= 10000) {
-        logger.warn('Reached message fetch limit of 10,000 messages');
+        // Process messages and cache them
+        for (const msg of channelMessages) {
+          const message: DiscordMessage = {
+            id: msg.id,
+            author: msg.author.username,
+            content: msg.content,
+            timestamp: msg.timestamp,
+            channelId,
+            attachments: msg.attachments.map(att => ({
+              filename: att.filename,
+              url: att.url,
+              size: att.size,
+            })),
+          };
+
+          // Cache all messages for association
+          this.messageCache.set(msg.id, message);
+
+          const relevantAttachments = msg.attachments.filter(att => {
+            const lower = att.filename.toLowerCase();
+            return lower.endsWith('.dat') || lower.endsWith('.zip');
+          });
+
+          if (relevantAttachments.length > 0) {
+            messages.push(message);
+          }
+        }
+
+        // Set the last message ID for pagination
+        lastMessageId = channelMessages[channelMessages.length - 1].id;
+
+        // Stop if we've fetched a lot of messages (safety limit)
+        if (totalFetched >= 10000) {
+          logger.warn('Reached message fetch limit of 10,000 messages');
+          hasMore = false;
+        }
+      } catch (error) {
+        logger.error(`Failed to fetch messages:`, error);
         hasMore = false;
       }
     }
@@ -454,13 +545,7 @@ export class DiscordUnifiedIndexer {
           lastMessageId ? `&before=${lastMessageId}` : ''
         }`;
 
-        const response = await fetch(url, { headers: this.headers });
-
-        if (!response.ok) {
-          logger.error(`Failed to fetch thread messages: ${response.status}`);
-          break;
-        }
-
+        const response = await this.fetchWithRetry(url, { headers: this.headers });
         const threadMessages: DiscordAPIMessage[] = await response.json();
 
         if (threadMessages.length === 0) {
@@ -525,14 +610,20 @@ export class DiscordUnifiedIndexer {
       // Process each .dat file as a level
       for (const datAttachment of datAttachments) {
         // Check if we've already processed this file
-        const fileHash = await FileUtils.getUrlHash(datAttachment.url);
-        const existingLevelId = this.processedHashes.get(fileHash);
+        const fileHash = FileUtils.getUrlHash(datAttachment.url);
+        logger.debug(`[DEBUG] Checking file ${datAttachment.filename} with hash: ${fileHash}`);
+        
+        const existingLevelId = this.skipExisting
+          ? this.stateManager.getFileLevel(fileHash)
+          : undefined;
 
         if (existingLevelId) {
           logger.info(
-            `Skipping duplicate file ${datAttachment.filename} (already processed as ${existingLevelId})`
+            `[DEBUG] Skipping duplicate file ${datAttachment.filename} (already processed as ${existingLevelId})`
           );
           continue;
+        } else {
+          logger.debug(`[DEBUG] File ${datAttachment.filename} not found in processed files, will process`);
         }
 
         // Find associated images (from same message and nearby messages)
@@ -554,14 +645,16 @@ export class DiscordUnifiedIndexer {
         if (level) {
           levels.push(level);
           // Store the hash to avoid duplicates
-          this.processedHashes.set(fileHash, level.metadata.id);
+          this.stateManager.markFileProcessed(fileHash, level.metadata.id);
         }
       }
 
       // Process each .zip file as a map pack
       for (const zipAttachment of zipAttachments) {
-        const fileHash = await FileUtils.getUrlHash(zipAttachment.url);
-        const existingLevelId = this.processedHashes.get(fileHash);
+        const fileHash = FileUtils.getUrlHash(zipAttachment.url);
+        const existingLevelId = this.skipExisting
+          ? this.stateManager.getFileLevel(fileHash)
+          : undefined;
 
         if (existingLevelId) {
           logger.info(
@@ -580,7 +673,8 @@ export class DiscordUnifiedIndexer {
         levels.push(...packLevels);
         // Store the hash to avoid duplicates
         if (packLevels.length > 0) {
-          this.processedHashes.set(fileHash, `pack-${packLevels[0].metadata.id}`);
+          const packId = `pack-${packLevels[0].metadata.id}`;
+          this.stateManager.markFileProcessed(fileHash, packId);
         }
       }
 
@@ -773,7 +867,11 @@ export class DiscordUnifiedIndexer {
     channelId: string
   ): Promise<Level[]> {
     const levels: Level[] = [];
-    const tempDir = path.join(this.outputDir, 'temp', `discord-zip-${Date.now()}`);
+    const tempDir = path.join(
+      this.outputDir,
+      '.tmp',
+      `discord-zip-${Date.now()}-${Math.random().toString(36).substring(7)}`
+    );
 
     try {
       await fs.ensureDir(tempDir);
@@ -938,46 +1036,47 @@ export class DiscordUnifiedIndexer {
   }
 
   private async downloadFile(url: string, filePath: string): Promise<void> {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
+      try {
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.downloadTimeout);
+
+        try {
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const buffer = await response.buffer();
+          await fs.writeFile(filePath, buffer);
+          return; // Success!
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      } catch (error: any) {
+        lastError = error as Error;
+
+        // Check if the error was due to timeout
+        if (error.name === 'AbortError') {
+          lastError = new Error(`Download timeout after ${this.downloadTimeout}ms`);
+        }
+
+        if (attempt < this.retryAttempts) {
+          const delay = 1000 * attempt;
+          logger.warn(
+            `Download failed for ${url}, attempt ${attempt}/${this.retryAttempts}. Retrying in ${delay}ms... Error: ${lastError.message}`
+          );
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
     }
 
-    const buffer = await response.buffer();
-    await fs.writeFile(filePath, buffer);
-  }
-
-  private async loadProcessedMessages(): Promise<void> {
-    const sourceKey = this.source.toLowerCase().replace('_', '-');
-    const processedPath = path.join(this.outputDir, `${sourceKey}_processed.json`);
-    const processed = await FileUtils.readJSON<string[]>(processedPath);
-
-    if (processed) {
-      this.processedMessages = new Set(processed);
-    }
-  }
-
-  private async saveProcessedMessages(): Promise<void> {
-    const sourceKey = this.source.toLowerCase().replace('_', '-');
-    const processedPath = path.join(this.outputDir, `${sourceKey}_processed.json`);
-    await FileUtils.writeJSON(processedPath, Array.from(this.processedMessages));
-  }
-
-  private async loadProcessedHashes(): Promise<void> {
-    const sourceKey = this.source.toLowerCase().replace('_', '-');
-    const hashesPath = path.join(this.outputDir, `${sourceKey}_hashes.json`);
-    const hashes = await FileUtils.readJSON<Record<string, string>>(hashesPath);
-
-    if (hashes) {
-      this.processedHashes = new Map(Object.entries(hashes));
-    }
-  }
-
-  private async saveProcessedHashes(): Promise<void> {
-    const sourceKey = this.source.toLowerCase().replace('_', '-');
-    const hashesPath = path.join(this.outputDir, `${sourceKey}_hashes.json`);
-    const hashesObj = Object.fromEntries(this.processedHashes);
-    await FileUtils.writeJSON(hashesPath, hashesObj);
+    throw lastError || new Error('Download failed after all retries');
   }
 
   private async saveLevelData(level: Level): Promise<void> {
@@ -1017,6 +1116,49 @@ export class DiscordUnifiedIndexer {
     } catch (error) {
       logger.debug('Channel access test failed:', error);
       return false;
+    }
+  }
+
+  private async migrateFromLegacyState(): Promise<void> {
+    try {
+      // Only migrate if state manager is empty
+      if (this.stateManager.getProcessedMessageCount() > 0) {
+        logger.debug('State manager already has data, skipping migration');
+        return;
+      }
+
+      const sourceKey = this.source.toLowerCase().replace('_', '-');
+
+      // Try to load legacy processed messages
+      const processedPath = path.join(this.outputDir, `${sourceKey}_processed.json`);
+      const processed = await FileUtils.readJSON<string[]>(processedPath);
+
+      if (processed && processed.length > 0) {
+        logger.info(`Migrating ${processed.length} messages from legacy state...`);
+        for (const messageId of processed) {
+          this.stateManager.markMessageProcessed(messageId);
+        }
+      }
+
+      // Try to load legacy hashes
+      const hashesPath = path.join(this.outputDir, `${sourceKey}_hashes.json`);
+      const hashes = await FileUtils.readJSON<Record<string, string>>(hashesPath);
+
+      if (hashes && Object.keys(hashes).length > 0) {
+        logger.info(`Migrating ${Object.keys(hashes).length} file hashes from legacy state...`);
+        for (const [hash, levelId] of Object.entries(hashes)) {
+          this.stateManager.markFileProcessed(hash, levelId);
+        }
+      }
+
+      // Save migrated state
+      if (processed || hashes) {
+        await this.stateManager.flush();
+        logger.success('Legacy state migration completed');
+      }
+    } catch (error) {
+      // Migration is optional, don't fail if legacy files don't exist
+      logger.debug('No legacy state files found or migration failed:', error);
     }
   }
 }

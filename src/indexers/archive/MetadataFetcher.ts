@@ -17,14 +17,9 @@ interface XMLDocNode {
 
 export class MetadataFetcher {
   private baseUrl = 'https://archive.org';
-  private cacheDir: string;
-  private cacheExpiry: number;
-  private enableCache: boolean;
 
-  constructor(outputDir: string, enableCache = true, cacheExpiry = 86400) {
-    this.cacheDir = path.join(outputDir, '.cache', 'metadata');
-    this.enableCache = enableCache;
-    this.cacheExpiry = cacheExpiry * 1000; // Convert to milliseconds
+  constructor(outputDir: string) {
+    // Cache functionality has been removed
   }
 
   async *fetchWithScrapeAPI(
@@ -135,14 +130,7 @@ export class MetadataFetcher {
   }
 
   async fetchItemDetails(identifier: string): Promise<ArchiveItemDetails | null> {
-    // Check cache first
-    if (this.enableCache) {
-      const cached = await this.getCachedMetadata(identifier);
-      if (cached) {
-        logger.debug(`Using cached metadata for ${identifier}`);
-        return cached;
-      }
-    }
+    // Cache functionality has been removed
 
     const url = `${this.baseUrl}/metadata/${identifier}`;
 
@@ -164,10 +152,7 @@ export class MetadataFetcher {
 
       const data: ArchiveItemDetails = (await response.json()) as ArchiveItemDetails;
 
-      // Cache the result
-      if (this.enableCache && data) {
-        await this.cacheMetadata(identifier, data);
-      }
+      // Cache functionality has been removed
 
       return data;
     } catch (error) {
@@ -179,22 +164,8 @@ export class MetadataFetcher {
   async fetchItemDetailsBatch(identifiers: string[]): Promise<Map<string, ArchiveItemDetails>> {
     const results = new Map<string, ArchiveItemDetails>();
 
-    // Check cache for all items first
-    const toFetch: string[] = [];
-
-    if (this.enableCache) {
-      for (const id of identifiers) {
-        const cached = await this.getCachedMetadata(id);
-        if (cached) {
-          results.set(id, cached);
-        } else {
-          toFetch.push(id);
-        }
-      }
-      logger.debug(`Found ${results.size} cached items, need to fetch ${toFetch.length}`);
-    } else {
-      toFetch.push(...identifiers);
-    }
+    // Fetch all items
+    const toFetch: string[] = [...identifiers];
 
     // Fetch remaining items in parallel
     if (toFetch.length > 0) {
@@ -222,48 +193,5 @@ export class MetadataFetcher {
     }
 
     return results;
-  }
-
-  private async getCachedMetadata(identifier: string): Promise<ArchiveItemDetails | null> {
-    try {
-      const cacheFile = path.join(this.cacheDir, `${identifier}.json`);
-      const exists = await FileUtils.fileExists(cacheFile);
-
-      if (!exists) {
-        return null;
-      }
-
-      const stats = await FileUtils.getFileStats(cacheFile);
-      const age = Date.now() - stats.mtime.getTime();
-
-      if (age > this.cacheExpiry) {
-        logger.debug(`Cache expired for ${identifier}`);
-        return null;
-      }
-
-      return await FileUtils.readJSON<ArchiveItemDetails>(cacheFile);
-    } catch (error) {
-      logger.warn(`Failed to read cache for ${identifier}:`, error);
-      return null;
-    }
-  }
-
-  private async cacheMetadata(identifier: string, data: ArchiveItemDetails): Promise<void> {
-    try {
-      await FileUtils.ensureDir(this.cacheDir);
-      const cacheFile = path.join(this.cacheDir, `${identifier}.json`);
-      await FileUtils.writeJSON(cacheFile, data);
-    } catch (error) {
-      logger.warn(`Failed to cache metadata for ${identifier}:`, error);
-    }
-  }
-
-  async clearCache(): Promise<void> {
-    try {
-      await FileUtils.deleteFile(this.cacheDir);
-      logger.info('Metadata cache cleared');
-    } catch (error) {
-      logger.warn('Failed to clear cache:', error);
-    }
   }
 }

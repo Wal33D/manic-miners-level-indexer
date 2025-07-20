@@ -26,8 +26,7 @@
     },
     "hognose": {
       "enabled": true,
-      "githubRepo": "charredUtensil/groundhog",
-      "checkInterval": 86400000
+      "githubRepo": "charredUtensil/groundhog"
     }
   }
 }

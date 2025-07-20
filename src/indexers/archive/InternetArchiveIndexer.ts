@@ -41,11 +41,7 @@ export class InternetArchiveIndexer extends EventEmitter {
     this.abortController = new AbortController();
 
     // Initialize components
-    this.metadataFetcher = new MetadataFetcher(
-      outputDir,
-      config.enableCache ?? true,
-      config.cacheExpiry ?? 86400
-    );
+    this.metadataFetcher = new MetadataFetcher(outputDir);
 
     this.downloadManager = new DownloadManager(
       config.maxConcurrentDownloads ?? 10,
@@ -69,8 +65,6 @@ export class InternetArchiveIndexer extends EventEmitter {
       searchQueries: config.searchQueries || ['manic miners level'],
       maxConcurrentProcessing: config.maxConcurrentProcessing ?? 5,
       maxConcurrentDownloads: config.maxConcurrentDownloads ?? 10,
-      enableCache: config.enableCache ?? true,
-      cacheExpiry: config.cacheExpiry ?? 86400,
       retryAttempts: config.retryAttempts ?? 3,
       downloadTimeout: config.downloadTimeout ?? 60000,
       skipExisting: config.skipExisting ?? true,
@@ -532,25 +526,7 @@ export class InternetArchiveIndexer extends EventEmitter {
     return {
       state: stateStats,
       downloads: downloadStats,
-      cache: {
-        metadataCache: await this.getMetadataCacheSize(),
-      },
     };
-  }
-
-  private async getMetadataCacheSize(): Promise<number> {
-    try {
-      const cacheDir = path.join(this.outputDir, '.cache', 'metadata');
-      const files = await FileUtils.listFiles(cacheDir);
-      return files.length;
-    } catch {
-      return 0;
-    }
-  }
-
-  async clearCache(): Promise<void> {
-    await this.metadataFetcher.clearCache();
-    logger.info('Cache cleared');
   }
 
   async resetState(): Promise<void> {

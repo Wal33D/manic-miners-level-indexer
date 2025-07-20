@@ -65,8 +65,6 @@ export interface IndexerConfig {
       };
       maxConcurrentMetadata?: number;
       maxConcurrentDownloads?: number;
-      enableCache?: boolean;
-      cacheExpiry?: number;
       retryAttempts?: number;
       downloadTimeout?: number;
       bandwidthLimit?: number;
@@ -77,16 +75,25 @@ export interface IndexerConfig {
       enabled: boolean;
       channels: string[];
       excludedThreads?: string[];
+      retryAttempts?: number;
+      downloadTimeout?: number;
+      skipExisting?: boolean;
     };
     discord_archive: {
       enabled: boolean;
       channels: string[];
       excludedThreads?: string[];
+      retryAttempts?: number;
+      downloadTimeout?: number;
+      skipExisting?: boolean;
     };
     hognose: {
       enabled: boolean;
       githubRepo?: string;
-      checkInterval?: number;
+      retryAttempts?: number;
+      downloadTimeout?: number;
+      verifyChecksums?: boolean;
+      skipExisting?: boolean;
     };
   };
 }

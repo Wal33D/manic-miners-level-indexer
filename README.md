@@ -26,6 +26,9 @@ The Manic Miners Level Indexer is a TypeScript-based tool that creates a searcha
 - **Progress Tracking**: Real-time progress updates during indexing operations
 - **Discord Authentication**: Supports both automated and manual Discord authentication
 - **Export Capabilities**: Export catalogs to JSON or CSV formats
+- **Skip Existing**: Smart state management to avoid re-processing already indexed content
+- **Retry Logic**: Automatic retry with exponential backoff for network failures
+- **Checksum Verification**: Validate downloaded file integrity (Hognose and Internet Archive)
 
 ## 📊 Latest Indexing Results
 
@@ -150,17 +153,27 @@ Create a `config.json` file to customize indexing behavior:
       "enabled": true,
       "channels": [
         "1139908458968252457"
-      ]
+      ],
+      "retryAttempts": 3,
+      "downloadTimeout": 60000,
+      "skipExisting": true
     },
     "discord_archive": {
       "enabled": true,
       "channels": [
         "683985075704299520"
-      ]
+      ],
+      "retryAttempts": 3,
+      "downloadTimeout": 60000,
+      "skipExisting": true
     },
     "hognose": {
       "enabled": true,
-      "githubRepo": "charredUtensil/groundhog"
+      "githubRepo": "charredUtensil/groundhog",
+      "retryAttempts": 3,
+      "downloadTimeout": 60000,
+      "verifyChecksums": true,
+      "skipExisting": true
     }
   }
 }
@@ -229,10 +242,10 @@ import { MasterIndexer, IndexerConfig } from 'manic-miners-level-indexer';
 const config: IndexerConfig = {
   outputDir: './my-levels',
   sources: {
-    internet_archive: { enabled: true },
-    discord_community: { enabled: true, channels: ['1139908458968252457'] },
-    discord_archive: { enabled: true, channels: ['683985075704299520'] },
-    hognose: { enabled: true }
+    internet_archive: { enabled: true, retryAttempts: 3, downloadTimeout: 60000, skipExisting: true },
+    discord_community: { enabled: true, channels: ['1139908458968252457'], retryAttempts: 3, downloadTimeout: 60000, skipExisting: true },
+    discord_archive: { enabled: true, channels: ['683985075704299520'], retryAttempts: 3, downloadTimeout: 60000, skipExisting: true },
+    hognose: { enabled: true, retryAttempts: 3, downloadTimeout: 60000, verifyChecksums: true, skipExisting: true }
   }
 };
 

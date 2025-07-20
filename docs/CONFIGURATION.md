@@ -172,8 +172,6 @@ TEST_LIMIT="10"   # Number of items per source
     },
     "maxConcurrentMetadata": 10,
     "maxConcurrentDownloads": 5,
-    "enableCache": true,
-    "cacheExpiry": 86400000,
     "retryAttempts": 3,
     "downloadTimeout": 60000,
     "bandwidthLimit": 1048576,
@@ -197,12 +195,10 @@ TEST_LIMIT="10"   # Number of items per source
 | `dateRange` | object | null | Filter by upload date |
 | `maxConcurrentMetadata` | number | 10 | Parallel metadata fetches |
 | `maxConcurrentDownloads` | number | 5 | Parallel file downloads |
-| `enableCache` | boolean | true | Cache metadata locally |
-| `cacheExpiry` | number | 86400000 | Cache lifetime (ms) |
 | `retryAttempts` | number | 3 | Download retry count |
 | `downloadTimeout` | number | 60000 | Download timeout (ms) |
 | `bandwidthLimit` | number | null | Bytes/second limit |
-| `skipExisting` | boolean | true | Skip already indexed |
+| `skipExisting` | boolean | true | Skip already indexed files based on hash |
 | `verifyChecksums` | boolean | false | Verify file hashes |
 | `includeCollections` | string[] | null | Only these collections |
 | `excludeCollections` | string[] | null | Skip these collections |
@@ -230,7 +226,10 @@ TEST_LIMIT="10"   # Number of items per source
     "downloadAttachments": true,
     "allowedFileTypes": [".dat"],
     "skipEmptyMessages": true,
-    "parseMessageContent": true
+    "parseMessageContent": true,
+    "retryAttempts": 3,
+    "downloadTimeout": 60000,
+    "skipExisting": true
   }
 }
 ```
@@ -250,6 +249,9 @@ TEST_LIMIT="10"   # Number of items per source
 | `allowedFileTypes` | string[] | [".dat"] | File extensions to download |
 | `skipEmptyMessages` | boolean | true | Skip messages without attachments |
 | `parseMessageContent` | boolean | true | Extract metadata from messages |
+| `retryAttempts` | number | 3 | Retry count for failed requests |
+| `downloadTimeout` | number | 60000 | Download timeout in milliseconds |
+| `skipExisting` | boolean | true | Skip already indexed messages and files |
 
 ## Hognose Configuration
 
@@ -260,14 +262,17 @@ TEST_LIMIT="10"   # Number of items per source
   "hognose": {
     "enabled": true,
     "githubRepo": "charredUtensil/hognose",
-    "checkInterval": 86400000,
     "includePrerelease": false,
     "downloadAssets": true,
     "assetPatterns": ["*.zip", "*.dat"],
     "extractArchives": true,
     "groupByRelease": true,
     "limitReleases": null,
-    "githubToken": null
+    "githubToken": null,
+    "retryAttempts": 3,
+    "downloadTimeout": 60000,
+    "verifyChecksums": true,
+    "skipExisting": true
   }
 }
 ```
@@ -278,7 +283,6 @@ TEST_LIMIT="10"   # Number of items per source
 |--------|------|---------|-------------|
 | `enabled` | boolean | true | Enable/disable this indexer |
 | `githubRepo` | string | "charredUtensil/hognose" | GitHub repository path |
-| `checkInterval` | number | 86400000 | Update check interval (ms) |
 | `includePrerelease` | boolean | false | Include pre-release versions |
 | `downloadAssets` | boolean | true | Download release assets |
 | `assetPatterns` | string[] | ["*.zip"] | Asset filename patterns |
@@ -286,6 +290,10 @@ TEST_LIMIT="10"   # Number of items per source
 | `groupByRelease` | boolean | true | Group levels by release |
 | `limitReleases` | number | null | Max releases to process |
 | `githubToken` | string | null | GitHub API token |
+| `retryAttempts` | number | 3 | Retry count for failed requests |
+| `downloadTimeout` | number | 60000 | Download timeout in milliseconds |
+| `verifyChecksums` | boolean | true | Verify SHA-256 checksums of ZIP files |
+| `skipExisting` | boolean | true | Skip already indexed releases and files |
 
 ## Advanced Configuration
 
@@ -357,8 +365,7 @@ TEST_LIMIT="10"   # Number of items per source
     "archive": {
       "enabled": true,
       "searchQueries": ["manic miners test"],
-      "maxConcurrentDownloads": 1,
-      "enableCache": false
+      "maxConcurrentDownloads": 1
     },
     "discord": {
       "enabled": true,
@@ -391,7 +398,6 @@ TEST_LIMIT="10"   # Number of items per source
       ],
       "maxConcurrentMetadata": 20,
       "maxConcurrentDownloads": 10,
-      "enableCache": true,
       "bandwidthLimit": 5242880,
       "verifyChecksums": true,
       "skipExisting": true
@@ -403,12 +409,14 @@ TEST_LIMIT="10"   # Number of items per source
         "1139908458968252457"
       ],
       "authMethod": "token",
-      "includeArchived": true
+      "includeArchived": true,
+      "skipExisting": true
     },
     "hognose": {
       "enabled": true,
-      "checkInterval": 3600000,
-      "includePrerelease": false
+      "includePrerelease": false,
+      "skipExisting": true,
+      "verifyChecksums": true
     }
   },
   "logging": {
@@ -551,7 +559,6 @@ const configFile = `config.${process.env.NODE_ENV || 'development'}.json`;
   "sources": {
     "archive": {
       "maxConcurrentDownloads": 1,
-      "enableCache": false
     }
   }
 }
@@ -561,7 +568,6 @@ const configFile = `config.${process.env.NODE_ENV || 'development'}.json`;
   "sources": {
     "archive": {
       "maxConcurrentDownloads": 10,
-      "enableCache": true,
       "bandwidthLimit": 5242880
     }
   }

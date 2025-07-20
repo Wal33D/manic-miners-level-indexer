@@ -120,10 +120,6 @@ export class ConfigManager {
     this.config.sources.hognose.githubRepo = repo;
   }
 
-  setHognoseCheckInterval(interval: number): void {
-    this.config.sources.hognose.checkInterval = interval;
-  }
-
   // Validation
   validateConfig(): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
@@ -168,12 +164,6 @@ export class ConfigManager {
     if (this.config.sources.hognose.enabled) {
       if (!this.config.sources.hognose.githubRepo) {
         errors.push('Hognose GitHub repository is required when Hognose source is enabled');
-      }
-      if (
-        !this.config.sources.hognose.checkInterval ||
-        this.config.sources.hognose.checkInterval < 1000
-      ) {
-        errors.push('Hognose check interval must be at least 1000ms');
       }
     }
 
@@ -252,7 +242,6 @@ export class ConfigManager {
           hognose: {
             enabled: 'Enable Hognose GitHub releases indexing',
             githubRepo: "GitHub repository in format 'owner/repo'",
-            checkInterval: 'Interval in milliseconds to check for new releases',
           },
         },
       },

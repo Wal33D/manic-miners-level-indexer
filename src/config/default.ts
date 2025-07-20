@@ -22,7 +22,6 @@ export const defaultConfig: IndexerConfig = {
     hognose: {
       enabled: true,
       githubRepo: 'charredUtensil/groundhog',
-      checkInterval: 24 * 60 * 60 * 1000, // 24 hours
     },
   },
 };

@@ -52,8 +52,6 @@ The Internet Archive indexer searches and downloads Manic Miners levels from Arc
     },
     "maxConcurrentMetadata": 10,
     "maxConcurrentDownloads": 5,
-    "enableCache": true,
-    "cacheExpiry": 86400000,
     "retryAttempts": 3,
     "downloadTimeout": 60000,
     "bandwidthLimit": 1048576,
@@ -69,9 +67,7 @@ The Internet Archive indexer searches and downloads Manic Miners levels from Arc
 - **dateRange**: Filter results by upload date
 - **maxConcurrentMetadata**: Parallel metadata fetches (default: 10)
 - **maxConcurrentDownloads**: Parallel file downloads (default: 5)
-- **enableCache**: Cache metadata to reduce API calls
-- **cacheExpiry**: Cache lifetime in milliseconds (default: 24 hours)
-- **retryAttempts**: Retry count for failed downloads (default: 3)
+- **retryAttempts**: Retry count for failed downloads (default: 3) with exponential backoff
 - **downloadTimeout**: Download timeout in milliseconds (default: 60s)
 - **bandwidthLimit**: Bytes per second limit (optional)
 - **skipExisting**: Skip already indexed items (default: true)
@@ -138,16 +134,32 @@ The Discord indexer extracts levels shared in Discord forum channels and threads
 
 ```json
 {
-  "discord": {
+  "discord_community": {
     "enabled": true,
     "channels": [
-      "683985075704299520",
-      "1139908458968252457",
-      "https://discord.com/channels/580269696369164299/1139908458968252457"
-    ]
+      "1139908458968252457"
+    ],
+    "excludedThreads": ["thread_id"],
+    "retryAttempts": 3,
+    "downloadTimeout": 60000
+  },
+  "discord_archive": {
+    "enabled": true,
+    "channels": [
+      "683985075704299520"
+    ],
+    "retryAttempts": 3,
+    "downloadTimeout": 60000
   }
 }
 ```
+
+### Configuration Options
+
+- **channels**: Array of channel IDs to index
+- **excludedThreads**: Array of thread IDs to skip (optional)
+- **retryAttempts**: Retry count for failed API calls and downloads (default: 3) with exponential backoff
+- **downloadTimeout**: Download timeout in milliseconds (default: 60000ms)
 
 ### Authentication Setup
 
@@ -234,7 +246,9 @@ The Hognose indexer downloads procedurally generated levels from the Hognose Git
   "hognose": {
     "enabled": true,
     "githubRepo": "charredUtensil/hognose",
-    "checkInterval": 86400000
+    "retryAttempts": 3,
+    "downloadTimeout": 60000,
+    "verifyChecksums": true
   }
 }
 ```
@@ -242,7 +256,9 @@ The Hognose indexer downloads procedurally generated levels from the Hognose Git
 ### Configuration Options
 
 - **githubRepo**: GitHub repository path (owner/repo)
-- **checkInterval**: Time between update checks in milliseconds
+- **retryAttempts**: Retry count for failed API calls and downloads (default: 3) with exponential backoff
+- **downloadTimeout**: Download timeout in milliseconds (default: 60000ms)
+- **verifyChecksums**: Calculate and log SHA-256 checksums for downloaded ZIP files (default: false)
 
 ### Usage Example
 
@@ -365,7 +381,6 @@ Detection logic:
   "archive": {
     "maxConcurrentMetadata": 20,      // Increase for faster discovery
     "maxConcurrentDownloads": 10,    // Balance with bandwidth
-    "enableCache": true,              // Reduce API calls
     "bandwidthLimit": 5242880        // 5MB/s limit
   }
 }
@@ -388,7 +403,6 @@ Detection logic:
 {
   "hognose": {
     // Generally fast, no tuning needed
-    "checkInterval": 3600000  // Check hourly for updates
   }
 }
 ```

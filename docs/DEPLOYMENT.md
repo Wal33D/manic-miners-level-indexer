@@ -118,22 +118,25 @@ Create `config.production.json`:
     "internet_archive": {
       "enabled": true,
       "maxConcurrentDownloads": 10,
-      "enableCache": true,
-      "cacheExpiry": 86400000,
       "skipExisting": true,
       "verifyChecksums": true
     },
     "discord_community": {
       "enabled": true,
-      "channels": ["1139908458968252457"]
+      "channels": ["1139908458968252457"],
+      "retryAttempts": 3,
+      "downloadTimeout": 60000
     },
     "discord_archive": {
       "enabled": true,
-      "channels": ["683985075704299520"]
+      "channels": ["683985075704299520"],
+      "retryAttempts": 3,
+      "downloadTimeout": 60000
     },
     "hognose": {
       "enabled": true,
-      "checkInterval": 3600000
+      "retryAttempts": 3,
+      "downloadTimeout": 60000
     }
   },
   "logging": {
@@ -599,7 +602,6 @@ s3fs manic-miners-catalog /data/manic-miners/output
     "internet_archive": {
       "maxConcurrentDownloads": 20,  // Increase for better bandwidth
       "maxConcurrentMetadata": 30,   // More parallel metadata fetches
-      "enableCache": true,
       "skipExisting": true,
       "verifyChecksums": false  // Disable for speed
     }

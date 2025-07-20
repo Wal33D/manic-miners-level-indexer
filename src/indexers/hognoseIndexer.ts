@@ -14,6 +14,8 @@ import { getSourceLevelsDir } from '../utils/sourceUtils';
 import path from 'path';
 import fs from 'fs-extra';
 import { Readable } from 'stream';
+import crypto from 'crypto';
+import { HognoseStateManager } from './hognose/HognoseStateManager';
 
 // GitHub API types
 interface GitHubAsset {
@@ -36,10 +38,27 @@ export class HognoseIndexer {
   private outputDir: string;
   private processedReleases: Set<string> = new Set();
   private catalogManager: import('../catalog/catalogManager').CatalogManager | null = null;
+  private retryAttempts: number;
+  private downloadTimeout: number;
+  private verifyChecksums: boolean;
+  private skipExisting: boolean;
+  private stateManager: HognoseStateManager;
 
-  constructor(githubRepo: string, outputDir: string) {
+  constructor(
+    githubRepo: string,
+    outputDir: string,
+    retryAttempts?: number,
+    downloadTimeout?: number,
+    verifyChecksums?: boolean,
+    skipExisting?: boolean
+  ) {
     this.githubRepo = githubRepo;
     this.outputDir = outputDir;
+    this.retryAttempts = retryAttempts ?? 3;
+    this.downloadTimeout = downloadTimeout ?? 60000; // Default 60 seconds
+    this.verifyChecksums = verifyChecksums ?? false;
+    this.skipExisting = skipExisting ?? true; // Default to true
+    this.stateManager = new HognoseStateManager(outputDir);
   }
 
   async indexHognose(
@@ -62,6 +81,14 @@ export class HognoseIndexer {
       this.catalogManager = new CatalogManager(this.outputDir);
       await this.catalogManager.loadCatalogIndex();
 
+      // Load state if skipExisting is enabled
+      if (this.skipExisting && !options?.replaceExisting) {
+        await this.stateManager.loadState();
+        logger.info(
+          `Loaded state: ${this.stateManager.getProcessedReleaseCount()} releases already processed`
+        );
+      }
+
       // If replaceExisting is true, clear all existing Hognose levels
       if (options?.replaceExisting) {
         logger.item('Clearing existing Hognose levels...');
@@ -72,6 +99,11 @@ export class HognoseIndexer {
 
         // Clear the processed releases tracking from memory
         this.processedReleases.clear();
+
+        // Clear state if skipExisting is enabled
+        if (this.skipExisting) {
+          await this.stateManager.clearState();
+        }
       }
 
       progressCallback?.({
@@ -133,21 +165,40 @@ export class HognoseIndexer {
         const release = releasesToProcess[i];
 
         try {
-          if (this.processedReleases.has(release.tag_name)) {
+          // Check if release should be skipped
+          if (this.skipExisting && this.stateManager.isReleaseProcessed(release.tag_name)) {
             logger.debug(`Skipping already processed release: ${release.tag_name}`);
             levelsSkipped++;
             continue;
           }
 
+          // Legacy check for backward compatibility
+          if (this.processedReleases.has(release.tag_name)) {
+            logger.debug(`Skipping already processed release (legacy): ${release.tag_name}`);
+            levelsSkipped++;
+            continue;
+          }
+
           const levels = await this.processHognoseRelease(release);
+          let releaseLevelsProcessed = 0;
           for (const level of levels) {
             await this.saveLevelData(level);
             levelsProcessed++;
+            releaseLevelsProcessed++;
             logger.item(`${level.metadata.title}`, '✔');
           }
 
-          this.processedReleases.add(release.tag_name);
-          await this.saveProcessedReleases();
+          // Mark release as processed if we successfully processed any levels
+          if (releaseLevelsProcessed > 0) {
+            this.processedReleases.add(release.tag_name);
+            await this.saveProcessedReleases();
+
+            // Update state if skipExisting is enabled
+            if (this.skipExisting) {
+              this.stateManager.markReleaseProcessed(release.tag_name);
+              await this.stateManager.saveState();
+            }
+          }
         } catch (error) {
           const errorMsg = `Failed to process Hognose release ${release.tag_name}: ${error}`;
           logger.error(errorMsg);
@@ -190,16 +241,57 @@ export class HognoseIndexer {
     }
   }
 
+  private async fetchWithRetry(url: string, options: any = {}): Promise<any> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
+      try {
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.downloadTimeout);
+
+        try {
+          const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          return response;
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      } catch (error: any) {
+        lastError = error as Error;
+
+        // Check if the error was due to timeout
+        if (error.name === 'AbortError') {
+          lastError = new Error(`Download timeout after ${this.downloadTimeout}ms`);
+        }
+
+        if (attempt < this.retryAttempts) {
+          const delay = 1000 * attempt; // Exponential backoff: 1s, 2s, 3s
+          logger.warn(
+            `Request failed for ${url}, attempt ${attempt}/${this.retryAttempts}. Retrying in ${delay}ms... Error: ${lastError.message}`
+          );
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw lastError || new Error('Request failed after all retries');
+  }
+
   private async fetchHognoseReleases(): Promise<HognoseRelease[]> {
     try {
       const apiUrl = `https://api.github.com/repos/${this.githubRepo}/releases`;
       logger.debug(`Fetching Hognose releases from: ${apiUrl}`);
 
-      const response = await fetch(apiUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
+      const response = await this.fetchWithRetry(apiUrl);
       const releases = (await response.json()) as GitHubRelease[];
 
       const hognoseReleases: HognoseRelease[] = releases.map(release => ({
@@ -263,17 +355,39 @@ export class HognoseIndexer {
 
     try {
       // Fetch the ZIP file as a stream
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+      const response = await this.fetchWithRetry(url);
 
       if (!response.body) {
         throw new Error('Response body is null');
       }
 
-      // Process ZIP entries directly from the stream
-      const zipStream = Readable.from(response.body).pipe(unzipper.Parse());
+      // If checksum verification is enabled, we need to buffer the response to calculate hash
+      let responseStream: NodeJS.ReadableStream;
+
+      if (this.verifyChecksums) {
+        // Buffer the entire response to calculate checksum
+        const chunks: Buffer[] = [];
+        for await (const chunk of response.body) {
+          chunks.push(Buffer.from(chunk));
+        }
+        const buffer = Buffer.concat(chunks);
+
+        // Calculate SHA-256 checksum
+        const hash = crypto.createHash('sha256');
+        hash.update(buffer);
+        const calculatedChecksum = hash.digest('hex');
+
+        logger.info(`ZIP file SHA-256 checksum for ${url}: ${calculatedChecksum}`);
+
+        // Create a readable stream from the buffer
+        responseStream = Readable.from(buffer);
+      } else {
+        // Use the response stream directly
+        responseStream = Readable.from(response.body);
+      }
+
+      // Process ZIP entries from the stream
+      const zipStream = responseStream.pipe(unzipper.Parse());
 
       await new Promise<void>((resolve, reject) => {
         zipStream.on('entry', async (entry: unzipper.Entry) => {
@@ -314,6 +428,34 @@ export class HognoseIndexer {
     release: HognoseRelease
   ): Promise<Level | null> {
     try {
+      // First, stream to a temporary location to calculate hash if skipExisting is enabled
+      const tempPath = path.join(
+        this.outputDir,
+        '.temp',
+        `${Date.now()}_${path.basename(fileName)}`
+      );
+      await FileUtils.ensureDir(path.dirname(tempPath));
+
+      // Stream the .dat file to temp location
+      const writeStream = fs.createWriteStream(tempPath);
+      await new Promise<void>((resolve, reject) => {
+        entry.pipe(writeStream);
+        writeStream.on('finish', resolve);
+        writeStream.on('error', reject);
+        entry.on('error', reject);
+      });
+
+      // Calculate hash
+      const fileHash = await FileUtils.getFileHash(tempPath);
+
+      // Check if file has already been processed
+      if (this.skipExisting && this.stateManager.isFileProcessed(fileHash)) {
+        logger.debug(`Skipping already processed file: ${fileName} (hash: ${fileHash})`);
+        await fs.remove(tempPath);
+        return null;
+      }
+
+      // Generate level ID and create final directory
       const levelId = FileUtils.generateUniqueId();
       const levelDir = path.join(this.outputDir, getSourceLevelsDir(MapSource.HOGNOSE), levelId);
       await FileUtils.ensureDir(levelDir);
@@ -321,14 +463,8 @@ export class HognoseIndexer {
       const datFileName = path.basename(fileName);
       const localDatPath = path.join(levelDir, datFileName);
 
-      // Stream the .dat file directly to disk
-      const writeStream = fs.createWriteStream(localDatPath);
-      await new Promise<void>((resolve, reject) => {
-        entry.pipe(writeStream);
-        writeStream.on('finish', resolve);
-        writeStream.on('error', reject);
-        entry.on('error', reject);
-      });
+      // Move from temp to final location
+      await fs.move(tempPath, localDatPath, { overwrite: true });
 
       // Extract level name from filename (remove .dat extension)
       const levelName = path.basename(datFileName, '.dat');
@@ -351,7 +487,7 @@ export class HognoseIndexer {
           filename: datFileName,
           path: localDatPath,
           size: await FileUtils.getFileSize(localDatPath),
-          hash: await FileUtils.getFileHash(localDatPath),
+          hash: fileHash,
           type: 'dat' as const,
         },
       ];
@@ -364,6 +500,11 @@ export class HognoseIndexer {
         indexed: new Date(),
         lastUpdated: new Date(),
       };
+
+      // Mark file as processed if skipExisting is enabled
+      if (this.skipExisting) {
+        this.stateManager.markFileProcessed(fileHash, levelId);
+      }
 
       return level;
     } catch (error) {

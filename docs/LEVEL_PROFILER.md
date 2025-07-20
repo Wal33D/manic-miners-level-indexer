@@ -492,7 +492,6 @@ export interface ProfilerConfig {
   performance: {
     concurrent: number;        // Parallel analysis
     cacheProfiles: boolean;
-    cacheExpiry: number;      // Cache lifetime in ms
     quickMode: boolean;       // Faster but less accurate
   };
   
@@ -521,8 +520,7 @@ const profiler = new LevelProfiler({
   },
   performance: {
     concurrent: 4,
-    cacheProfiles: true,
-    cacheExpiry: 7 * 24 * 60 * 60 * 1000 // 7 days
+    cacheProfiles: true
   }
 });
 

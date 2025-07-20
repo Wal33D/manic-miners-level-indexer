@@ -31,7 +31,14 @@ export class MasterIndexer {
     }
 
     if (config.sources.hognose.enabled && config.sources.hognose.githubRepo) {
-      this.hognoseIndexer = new HognoseIndexer(config.sources.hognose.githubRepo, config.outputDir);
+      this.hognoseIndexer = new HognoseIndexer(
+        config.sources.hognose.githubRepo,
+        config.outputDir,
+        config.sources.hognose.retryAttempts,
+        config.sources.hognose.downloadTimeout,
+        config.sources.hognose.verifyChecksums,
+        config.sources.hognose.skipExisting
+      );
     }
 
     if (config.sources.discord_community.enabled) {
@@ -39,7 +46,10 @@ export class MasterIndexer {
         config.sources.discord_community.channels,
         config.outputDir,
         MapSource.DISCORD_COMMUNITY,
-        config.sources.discord_community.excludedThreads
+        config.sources.discord_community.excludedThreads,
+        config.sources.discord_community.retryAttempts,
+        config.sources.discord_community.downloadTimeout,
+        config.sources.discord_community.skipExisting
       );
     }
 
@@ -48,7 +58,10 @@ export class MasterIndexer {
         config.sources.discord_archive.channels,
         config.outputDir,
         MapSource.DISCORD_ARCHIVE,
-        config.sources.discord_archive.excludedThreads
+        config.sources.discord_archive.excludedThreads,
+        config.sources.discord_archive.retryAttempts,
+        config.sources.discord_archive.downloadTimeout,
+        config.sources.discord_archive.skipExisting
       );
     }
   }

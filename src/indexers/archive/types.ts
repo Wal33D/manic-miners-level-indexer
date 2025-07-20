@@ -72,8 +72,6 @@ export interface ArchiveIndexerConfig {
   maxConcurrentMetadata?: number;
   maxConcurrentDownloads?: number;
   maxConcurrentProcessing?: number; // How many items to process in parallel
-  enableCache?: boolean;
-  cacheExpiry?: number; // seconds
   retryAttempts?: number;
   downloadTimeout?: number; // ms
   bandwidthLimit?: number; // bytes per second

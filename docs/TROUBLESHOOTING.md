@@ -189,7 +189,6 @@ npx playwright install
 ```json
 {
   "archive": {
-    "enableCache": true,        // Use cached data
     "retryAttempts": 5,        // More retries
     "downloadTimeout": 180000   // 3 minute timeout
   }
@@ -343,7 +342,6 @@ NODE_OPTIONS="--max-old-space-size=2048" npm run index
 ```json
 {
   "archive": {
-    "enableCache": true,
     "skipExisting": true,
     "verifyChecksums": false  // Skip verification
   },

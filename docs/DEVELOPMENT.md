@@ -132,7 +132,6 @@ function processLevel(level: Level): ProcessedLevel {
 // Use interfaces for object shapes
 interface IndexerOptions {
   outputDir: string;
-  enableCache?: boolean;  // Optional properties
 }
 
 // Use enums for fixed sets of values

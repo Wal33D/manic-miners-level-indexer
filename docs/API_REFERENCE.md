@@ -204,8 +204,6 @@ interface ArchiveConfig {
   searchQueries?: string[];
   concurrentDownloads?: number;
   maxConcurrentMetadata?: number;
-  enableCache?: boolean;
-  cacheExpiry?: number;
   retryAttempts?: number;
   downloadTimeout?: number;
   bandwidthLimit?: number;
