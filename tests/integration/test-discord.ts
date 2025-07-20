@@ -1,4 +1,5 @@
-import { DiscordUnifiedIndexer } from '../../src/indexers/discordUnified';
+import { DiscordCommunityIndexer } from '../../src/indexers/discord/discordCommunityIndexer';
+import { DiscordArchiveIndexer } from '../../src/indexers/discord/discordArchiveIndexer';
 import { logger } from '../../src/utils/logger';
 import fs from 'fs-extra';
 import path from 'path';
@@ -31,15 +32,13 @@ async function testDiscordIndexer() {
   logger.info(`  - ${defaultConfig.sources.discord_community.channels[0]} (Community levels v1+)`);
 
   // Test both Discord sources
-  const communityIndexer = new DiscordUnifiedIndexer(
+  const communityIndexer = new DiscordCommunityIndexer(
     defaultConfig.sources.discord_community.channels,
-    outputDir,
-    MapSource.DISCORD_COMMUNITY
+    outputDir
   );
-  const archiveIndexer = new DiscordUnifiedIndexer(
+  const archiveIndexer = new DiscordArchiveIndexer(
     defaultConfig.sources.discord_archive.channels,
-    outputDir,
-    MapSource.DISCORD_ARCHIVE
+    outputDir
   );
 
   const startTime = Date.now();

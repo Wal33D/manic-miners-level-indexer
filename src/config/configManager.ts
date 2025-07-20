@@ -218,37 +218,4 @@ export class ConfigManager {
 
     return merged;
   }
-
-  async createConfigTemplate(): Promise<string> {
-    const templatePath = path.join(process.cwd(), 'config.template.json');
-    const template = {
-      ...defaultConfig,
-      // Add comments as properties (will be ignored by JSON.parse but useful for users)
-      _comments: {
-        outputDir: 'Directory where all indexed levels and catalogs will be stored',
-        sources: {
-          internet_archive: {
-            enabled: 'Enable Internet Archive indexing',
-            baseUrl: 'Base URL for Internet Archive API',
-          },
-          discord_community: {
-            enabled: 'Enable Discord Community channel indexing',
-            channels: 'List of Discord Community channel IDs to scrape',
-          },
-          discord_archive: {
-            enabled: 'Enable Discord Archive channel indexing',
-            channels: 'List of Discord Archive channel IDs to scrape',
-          },
-          hognose: {
-            enabled: 'Enable Hognose GitHub releases indexing',
-            githubRepo: "GitHub repository in format 'owner/repo'",
-          },
-        },
-      },
-    };
-
-    await FileUtils.writeJSON(templatePath, template);
-    logger.info(`Configuration template created at ${templatePath}`);
-    return templatePath;
-  }
 }

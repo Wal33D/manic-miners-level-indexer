@@ -1,4 +1,7 @@
-import fetch from 'node-fetch';
+import fetch, {
+  RequestInit as NodeFetchRequestInit,
+  Response as NodeFetchResponse,
+} from 'node-fetch';
 import unzipper from 'unzipper';
 import {
   HognoseRelease,
@@ -241,7 +244,10 @@ export class HognoseIndexer {
     }
   }
 
-  private async fetchWithRetry(url: string, options: any = {}): Promise<any> {
+  private async fetchWithRetry(
+    url: string,
+    options: NodeFetchRequestInit = {}
+  ): Promise<NodeFetchResponse> {
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
@@ -265,11 +271,11 @@ export class HognoseIndexer {
         } finally {
           clearTimeout(timeoutId);
         }
-      } catch (error: any) {
-        lastError = error as Error;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
 
         // Check if the error was due to timeout
-        if (error.name === 'AbortError') {
+        if (lastError.name === 'AbortError') {
           lastError = new Error(`Download timeout after ${this.downloadTimeout}ms`);
         }
 
@@ -366,11 +372,7 @@ export class HognoseIndexer {
 
       if (this.verifyChecksums) {
         // Buffer the entire response to calculate checksum
-        const chunks: Buffer[] = [];
-        for await (const chunk of response.body) {
-          chunks.push(Buffer.from(chunk));
-        }
-        const buffer = Buffer.concat(chunks);
+        const buffer = await response.buffer();
 
         // Calculate SHA-256 checksum
         const hash = crypto.createHash('sha256');
@@ -383,7 +385,7 @@ export class HognoseIndexer {
         responseStream = Readable.from(buffer);
       } else {
         // Use the response stream directly
-        responseStream = Readable.from(response.body);
+        responseStream = response.body as unknown as NodeJS.ReadableStream;
       }
 
       // Process ZIP entries from the stream

@@ -2,7 +2,8 @@ import { Level, MapSource, IndexerResult } from '../types';
 import { CatalogManager } from './catalogManager';
 import { InternetArchiveIndexer } from '../indexers/archive/InternetArchiveIndexer';
 import { HognoseIndexer } from '../indexers/hognoseIndexer';
-import { DiscordUnifiedIndexer } from '../indexers/discordUnified';
+import { DiscordCommunityIndexer } from '../indexers/discord/discordCommunityIndexer';
+import { DiscordArchiveIndexer } from '../indexers/discord/discordArchiveIndexer';
 import { logger } from '../utils/logger';
 import { FileUtils } from '../utils/fileUtils';
 import { getAllSourceLevelsDirs } from '../utils/sourceUtils';
@@ -15,8 +16,8 @@ export class MasterIndexer {
   private catalogManager: CatalogManager;
   private internetArchiveIndexer?: InternetArchiveIndexer;
   private hognoseIndexer?: HognoseIndexer;
-  private discordCommunityIndexer?: DiscordUnifiedIndexer;
-  private discordArchiveIndexer?: DiscordUnifiedIndexer;
+  private discordCommunityIndexer?: DiscordCommunityIndexer;
+  private discordArchiveIndexer?: DiscordArchiveIndexer;
 
   constructor(config: IndexerConfig) {
     this.config = config;
@@ -42,10 +43,9 @@ export class MasterIndexer {
     }
 
     if (config.sources.discord_community.enabled) {
-      this.discordCommunityIndexer = new DiscordUnifiedIndexer(
+      this.discordCommunityIndexer = new DiscordCommunityIndexer(
         config.sources.discord_community.channels,
         config.outputDir,
-        MapSource.DISCORD_COMMUNITY,
         config.sources.discord_community.excludedThreads,
         config.sources.discord_community.retryAttempts,
         config.sources.discord_community.downloadTimeout,
@@ -54,10 +54,9 @@ export class MasterIndexer {
     }
 
     if (config.sources.discord_archive.enabled) {
-      this.discordArchiveIndexer = new DiscordUnifiedIndexer(
+      this.discordArchiveIndexer = new DiscordArchiveIndexer(
         config.sources.discord_archive.channels,
         config.outputDir,
-        MapSource.DISCORD_ARCHIVE,
         config.sources.discord_archive.excludedThreads,
         config.sources.discord_archive.retryAttempts,
         config.sources.discord_archive.downloadTimeout,

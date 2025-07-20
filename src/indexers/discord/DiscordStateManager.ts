@@ -38,7 +38,9 @@ export class DiscordStateManager {
         );
         // Log first few processed messages for debugging
         if (this.state.processedMessages.length > 0) {
-          logger.debug(`[DEBUG] Sample processed messages: ${this.state.processedMessages.slice(0, 5).join(', ')}`);
+          logger.debug(
+            `[DEBUG] Sample processed messages: ${this.state.processedMessages.slice(0, 5).join(', ')}`
+          );
         }
       } else if (existingState) {
         logger.warn('Discord state file has incompatible version, starting fresh');
@@ -58,7 +60,9 @@ export class DiscordStateManager {
       await FileUtils.ensureDir(path.dirname(this.stateFile));
       await FileUtils.writeJSON(this.stateFile, this.state);
       this.hasChanges = false;
-      logger.debug(`[DEBUG] Discord state saved successfully - ${this.state.processedMessages.length} messages, ${Object.keys(this.state.processedFiles).length} files`);
+      logger.debug(
+        `[DEBUG] Discord state saved successfully - ${this.state.processedMessages.length} messages, ${Object.keys(this.state.processedFiles).length} files`
+      );
     } catch (error) {
       logger.error('Failed to save Discord state:', error);
     }
@@ -76,7 +80,9 @@ export class DiscordStateManager {
 
   isMessageProcessed(messageId: string): boolean {
     const isProcessed = this.state.processedMessages.includes(messageId);
-    logger.debug(`[DEBUG] Checking if message ${messageId} is processed: ${isProcessed} (total processed: ${this.state.processedMessages.length})`);
+    logger.debug(
+      `[DEBUG] Checking if message ${messageId} is processed: ${isProcessed} (total processed: ${this.state.processedMessages.length})`
+    );
     return isProcessed;
   }
 
@@ -97,7 +103,9 @@ export class DiscordStateManager {
       this.state.processedMessages.push(messageId);
       this.hasChanges = true;
       this.scheduleSave();
-      logger.debug(`[DEBUG] Marked message as processed: ${messageId} (total: ${this.state.processedMessages.length})`);
+      logger.debug(
+        `[DEBUG] Marked message as processed: ${messageId} (total: ${this.state.processedMessages.length})`
+      );
     } else {
       logger.debug(`[DEBUG] Message already marked as processed: ${messageId}`);
     }
@@ -107,7 +115,9 @@ export class DiscordStateManager {
     this.state.processedFiles[fileHash] = levelId;
     this.hasChanges = true;
     this.scheduleSave();
-    logger.debug(`[DEBUG] Marked file as processed: hash=${fileHash}, levelId=${levelId} (total files: ${Object.keys(this.state.processedFiles).length})`);
+    logger.debug(
+      `[DEBUG] Marked file as processed: hash=${fileHash}, levelId=${levelId} (total files: ${Object.keys(this.state.processedFiles).length})`
+    );
   }
 
   getLastIndexedTime(channelId: string): Date | undefined {

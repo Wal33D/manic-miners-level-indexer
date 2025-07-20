@@ -130,7 +130,11 @@ export interface HognoseRelease {
 export interface DiscordMessage {
   id: string;
   content: string;
-  author: string;
+  author: {
+    id: string;
+    username: string;
+    discriminator: string;
+  };
   timestamp: string;
   channelId?: string;
   attachments: {

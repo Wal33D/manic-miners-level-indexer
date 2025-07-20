@@ -100,10 +100,7 @@ echo "your_discord_token_here" > ~/.discord-token
 Create a custom configuration file to control indexing behavior:
 
 ```bash
-# Copy the template
-cp config.template.json config.json
-
-# Edit with your preferences
+# Create config.json with your preferences
 nano config.json  # or use your preferred editor
 ```
 
@@ -112,21 +109,37 @@ Example `config.json`:
 {
   "outputDir": "./output",
   "sources": {
-    "archive": {
+    "internet_archive": {
       "enabled": true,
+      "baseUrl": "https://archive.org/advancedsearch.php",
       "searchQueries": ["manic miners level", "manic miners map"],
       "maxConcurrentDownloads": 3
     },
-    "discord": {
+    "discord_community": {
       "enabled": true,
       "channels": [
-        "683985075704299520",
         "1139908458968252457"
-      ]
+      ],
+      "retryAttempts": 3,
+      "downloadTimeout": 60000,
+      "skipExisting": true
+    },
+    "discord_archive": {
+      "enabled": true,
+      "channels": [
+        "683985075704299520"
+      ],
+      "retryAttempts": 3,
+      "downloadTimeout": 60000,
+      "skipExisting": true
     },
     "hognose": {
       "enabled": true,
-      "githubRepo": "charredUtensil/hognose"
+      "githubRepo": "charredUtensil/groundhog",
+      "retryAttempts": 3,
+      "downloadTimeout": 60000,
+      "verifyChecksums": true,
+      "skipExisting": true
     }
   }
 }
