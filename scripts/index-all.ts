@@ -65,12 +65,19 @@ async function main() {
 
     // Show final stats
     const stats = await masterIndexer.getCatalogStats();
-    logger.info('\n=== Final Statistics ===');
-    logger.info(`Total levels: ${stats.totalLevels}`);
-    logger.info('By source:');
-    Object.entries(stats.sources).forEach(([src, count]) => {
-      logger.info(`  - ${src}: ${count}`);
-    });
+    logger.header('Final Statistics');
+    logger.info(`Total levels indexed: ${stats.totalLevels}`);
+
+    // Display source statistics in a table
+    logger.section('Levels by Source');
+    const sourceRows = Object.entries(stats.sources).map(([source, count]) => [
+      source
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, l => l.toUpperCase()),
+      count as number,
+    ]);
+    logger.table(['Source', 'Level Count'], sourceRows);
 
     logger.success('\nIndexing completed successfully!');
     process.exit(0);
