@@ -29,6 +29,8 @@ The Manic Miners Level Indexer is a TypeScript-based tool that creates a searcha
 - **Skip Existing**: Smart state management to avoid re-processing already indexed content
 - **Retry Logic**: Automatic retry with exponential backoff for network failures
 - **Checksum Verification**: Validate downloaded file integrity (Hognose and Internet Archive)
+- **Secure File Handling**: All downloaded filenames are sanitized to prevent path traversal attacks
+- **Original Filename Preservation**: Images and files maintain their original names while ensuring filesystem safety
 
 ## 📊 Latest Indexing Results
 
