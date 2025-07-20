@@ -156,6 +156,49 @@ export class Logger {
       console.log(`  ${chalk.dim(paddedKey)} : ${chalk.bold(value)}`);
     }
   }
+
+  table(headers: string[], rows: (string | number)[][]): void {
+    this.clearProgressLine();
+
+    // Calculate column widths
+    const columnWidths = headers.map((header, index) => {
+      const headerWidth = header.length;
+      const maxRowWidth = Math.max(...rows.map(row => String(row[index] || '').length));
+      return Math.max(headerWidth, maxRowWidth) + 2; // Add padding
+    });
+
+    // Print top border
+    const topBorder = `┌${columnWidths.map(width => '─'.repeat(width)).join('┬')}┐`;
+    console.log(chalk.gray(topBorder));
+
+    // Print headers
+    const headerRow = `│${headers
+      .map((header, index) => {
+        const paddedHeader = ` ${header} `.padEnd(columnWidths[index]);
+        return chalk.bold.cyan(paddedHeader);
+      })
+      .join(chalk.gray('│'))}${chalk.gray('│')}`;
+    console.log(headerRow);
+
+    // Print header separator
+    const separator = `├${columnWidths.map(width => '─'.repeat(width)).join('┼')}┤`;
+    console.log(chalk.gray(separator));
+
+    // Print rows
+    rows.forEach(row => {
+      const rowStr = `│${row
+        .map((cell, index) => {
+          const cellStr = ` ${cell} `.padEnd(columnWidths[index]);
+          return typeof cell === 'number' ? chalk.yellow(cellStr) : cellStr;
+        })
+        .join(chalk.gray('│'))}${chalk.gray('│')}`;
+      console.log(rowStr);
+    });
+
+    // Print bottom border
+    const bottomBorder = `└${columnWidths.map(width => '─'.repeat(width)).join('┴')}┘`;
+    console.log(chalk.gray(bottomBorder));
+  }
 }
 
 export const logger = Logger.getInstance();
