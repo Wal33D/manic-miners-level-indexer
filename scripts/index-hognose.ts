@@ -9,7 +9,25 @@ async function loadConfig(): Promise<IndexerConfig> {
 
   if (!(await fs.pathExists(configPath))) {
     logger.error('config.json not found in current directory');
-    logger.info('Please create a config.json file based on config.template.json');
+    logger.info(
+      `Please create a config.json file with the following structure:\n${JSON.stringify(
+        {
+          outputDir: './output',
+          sources: {
+            hognose: {
+              enabled: true,
+              githubRepo: 'charredUtensil/groundhog',
+              retryAttempts: 3,
+              downloadTimeout: 60000,
+              verifyChecksums: true,
+              skipExisting: true,
+            },
+          },
+        },
+        null,
+        2
+      )}`
+    );
     process.exit(1);
   }
 

@@ -38,7 +38,29 @@ npm install
 npm run setup:hooks
 
 # Create development config
-cp config.template.json config.development.json
+cat > config.development.json << EOF
+{
+  "outputDir": "./output",
+  "sources": {
+    "internet_archive": {
+      "enabled": true,
+      "baseUrl": "https://archive.org/advancedsearch.php"
+    },
+    "discord_community": {
+      "enabled": true,
+      "channels": ["1139908458968252457"]
+    },
+    "discord_archive": {
+      "enabled": true,
+      "channels": ["683985075704299520"]
+    },
+    "hognose": {
+      "enabled": true,
+      "githubRepo": "charredUtensil/groundhog"
+    }
+  }
+}
+EOF
 
 # Set up environment variables
 cp .env.example .env
